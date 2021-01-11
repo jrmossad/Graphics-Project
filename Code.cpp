@@ -2,8 +2,8 @@
 #include <vector>
 #include <math.h>
 #include <string>
-
 #define DEGTORAD(x) x*3.1415/180.0
+#define INF 10000
 
 void drawUnitCube(){
     glBegin(GL_QUADS);                // Begin drawing the color cube with 6 quads
@@ -46,17 +46,28 @@ void drawUnitCube(){
     glEnd();
 }
 
+//===============================CLASSES=================================
+
 class Vector
 {
 public:
-    GLfloat x, y,z;
+    float x, y,z;
     Vector()  : x(0.0), y(0.0), z(0.0) {}
-    Vector(GLfloat _x, GLfloat _y, GLfloat _z) : x(_x), y(_y), z(_z) {}
+    Vector(float _x, float _y, float _z) : x(_x), y(_y), z(_z) {}
 
     Vector& operator += (const Vector& rhs)
     {
         x += rhs.x;
         y += rhs.y;
+        z += rhs.z;
+        return *this;
+    }
+
+    Vector& operator -= (const Vector& rhs)
+    {
+        x -= rhs.x;
+        y -= rhs.y;
+        z -= rhs.z;
         return *this;
     }
     //operator overloading
@@ -356,54 +367,63 @@ float windowHeight = glutGet(GLUT_SCREEN_HEIGHT);
 float windowWidth = glutGet(GLUT_SCREEN_WIDTH);
 float mouseX, mouseY;
 
-//rooms
 float thickness = 0.05;
 float halfThickness = 0.025;
 
+//===============================Collision==================================
+
 //clock-wise
-std::vector<Vector> mapPolygon ={
+Vector mapRectangles[] ={
         //main room
-        Vector(2 - thickness, halfThickness , -2 + thickness),
+        Vector(-2 + thickness, halfThickness , 2 - thickness), //bottom-left
+        Vector(2 - thickness, halfThickness , -2 + thickness), //top-right
         //right hallway
-        Vector(2 - thickness, halfThickness , -0.25 + thickness),
-        Vector(4 - thickness , halfThickness , -0.25 + thickness),
+        Vector(2 - thickness, halfThickness , 0.25 - thickness), //bottom-left
+        Vector(4 - thickness , halfThickness , -0.25 + thickness), //top-right
         //right room
-        Vector(4 - thickness , halfThickness , -2 + thickness),
-        Vector(6 - 3*thickness , halfThickness , -2 + thickness),
-        Vector(6 - 3*thickness , halfThickness , 2 - thickness),
+        Vector(4 - thickness, halfThickness , 2 - thickness), //bottom-left
+        Vector(6 - 3*thickness , halfThickness , -2 + thickness), //top-right
         //rightBotttom hallway
-        Vector(5 - 3*thickness +  0.25, halfThickness , 2 - thickness),
-        Vector(5 - 3*thickness +  0.25, halfThickness , 6 - thickness),
+        Vector(5 - thickness - 0.25, halfThickness , 6 - thickness), //bottom-left
+        Vector(5 - 3*thickness +  0.25, halfThickness , 2 - thickness), //top-right
         //bottom room
-        Vector(8 - 3*thickness, halfThickness , 6 - thickness),
-        Vector(8 - 3*thickness, halfThickness , 9 - 3*thickness),
-        Vector(2 - thickness, halfThickness , 9 - 3*thickness),
-        Vector(2 - thickness, halfThickness , 6 - thickness),
-        //rightBottom hallway
-        Vector(5 - thickness - 0.25, halfThickness , 6 - thickness),
-        Vector(5 - thickness - 0.25, halfThickness , 2 - thickness),
-        //right room
-        Vector(4 - thickness, halfThickness , 2 - thickness),
-        //right hallway
-        Vector(4 - thickness, halfThickness , 0.25 - thickness),
-        Vector(2 - thickness, halfThickness , 0.25 - thickness),
-        //main room
-        Vector(2 - thickness, halfThickness , 2 - thickness),
-        Vector(-2 + thickness, halfThickness , 2 - thickness),
+        Vector(2 - thickness, halfThickness , 9 - 3*thickness), //bottom-left
+        Vector(8 - 3*thickness, halfThickness , 6 - thickness), //top-right
         //left hallway
-        Vector(-2 + thickness, halfThickness , 0.25 - thickness),
-        Vector(-4 + thickness, halfThickness , 0.25 - thickness),
+        Vector(-4 + thickness, halfThickness , 0.25 - thickness), //bottom-left
+        Vector(-2 + thickness, halfThickness , -0.25 + thickness), //top-right
         //left room
-        Vector(-4 + thickness, halfThickness , 2 - thickness),
-        Vector(-6 + 3*thickness, halfThickness , 2 - thickness),
-        Vector(-6 + 3*thickness, halfThickness , -2 + thickness),
-        Vector(-4 + thickness, halfThickness , -2 + thickness),
-        //left hallway
-        Vector(-4 + thickness, halfThickness , -0.25 + thickness),
-        Vector(-2 + thickness, halfThickness , -0.25 + thickness),
-        //main room
-        Vector(-2 + thickness, halfThickness , -2 + thickness)
+        Vector(-6 + 3*thickness, halfThickness , 2 - thickness), //bottom-left
+        Vector(-4 + thickness, halfThickness , -2 + thickness), //top-right
 };
+
+bool insideRectangle(Vector bottomLeft,Vector topRight, Vector p)
+{
+    float margin = 0.02;
+    if(p.x > bottomLeft.x + margin && p.x < topRight.x - margin
+    && p.z > topRight.z + margin && p.z < bottomLeft.z - margin
+    && p.y >= halfThickness && p.y < 2){
+        return true;
+    }
+    return false;
+}
+
+// Returns true if the point p lies inside the polygon[] with n vertices
+bool validMove(Vector map[],int n,  Vector p)
+{
+    //n is odd
+    if(n&1) return false;
+
+    bool valid = false;
+    for (int i = 0; i < n- 1; i += 2) {
+        valid |= insideRectangle(map[i], map[i+1], p);
+    }
+
+    return valid;
+}
+
+
+//===============================Room-coordinates/dimensions=================================
 
 //predefined door sizes
 float eighth[4] = {0.125, 0.125, 0.125, 0.125};
@@ -418,6 +438,7 @@ Room bottomRoom(5 - 2 * thickness, 0, 7.5 - 2 * thickness, 6, thickness, 3, 2, e
 Room leftHallWay(-3 + thickness, 0, 0, 2, thickness, 0.5, 1, eighth);
 Room leftRoom(-5 + 2 * thickness, 0, 0, 2, thickness, 4, 2, eighth);
 
+//===============================INIT=================================
 
 void init(){
     mainRoom.assignWall(0, 1);
@@ -450,6 +471,7 @@ void init(){
     leftRoom.assignWall(3, 0);
 }
 
+//===============================DISPLAY=================================
 
 void Display(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -477,8 +499,11 @@ void Display(void) {
     rightBottomHallway.render();
     bottomRoom.render();
     leftRoom.render();
+
     glFlush();
 }
+
+//===============================MOUSE=================================
 
 void mouseMovement(int x, int y)
 {
@@ -499,29 +524,41 @@ void mouseMovement(int x, int y)
     glutPostRedisplay();
 }
 
+//===============================KEYBOARD=================================
+
 void SpecialInput(int key, int x, int y)
 {
+    Vector after(eye.x ,halfThickness, eye.z);
+
     switch(key)
     {
         case GLUT_KEY_UP:
-            eye.x += cos(DEGTORAD(cameraRotation.x))*speed;
-            eye.z += sin(DEGTORAD(cameraRotation.x))*speed;
+            after.x += cos(DEGTORAD(cameraRotation.x))*speed;
+            after.z += sin(DEGTORAD(cameraRotation.x))*speed;
             break;
         case GLUT_KEY_DOWN:
-            eye.x -= cos(DEGTORAD(cameraRotation.x))*speed;
-            eye.z -= sin(DEGTORAD(cameraRotation.x))*speed;
+            after.x -= cos(DEGTORAD(cameraRotation.x))*speed;
+            after.z -= sin(DEGTORAD(cameraRotation.x))*speed;
             break;
         case GLUT_KEY_LEFT:
-            eye.x += sin(DEGTORAD(cameraRotation.x))*speed;
-            eye.z -= cos(DEGTORAD(cameraRotation.x))*speed;
+            after.x += sin(DEGTORAD(cameraRotation.x))*speed;
+            after.z -= cos(DEGTORAD(cameraRotation.x))*speed;
             break;
         case GLUT_KEY_RIGHT:
-            eye.x -= sin(DEGTORAD(cameraRotation.x))*speed;
-            eye.z += cos(DEGTORAD(cameraRotation.x))*speed;
+            after.x -= sin(DEGTORAD(cameraRotation.x))*speed;
+            after.z += cos(DEGTORAD(cameraRotation.x))*speed;
             break;
     }
+
+    int n = sizeof(mapRectangles) / sizeof(mapRectangles[0]);
+    if(validMove(mapRectangles, n, after)){
+        eye.x = after.x;
+        eye.z = after.z;
+    }
+
     glutPostRedisplay();
 }
+
 void key(unsigned char k, int x,int y)
 {
 
@@ -537,16 +574,20 @@ void key(unsigned char k, int x,int y)
     glutPostRedisplay();
 }
 
+//===============================IDLE=================================
+
 void Idle()
 {
     glutPostRedisplay();
 
 }
 
+//===============================MAIN=================================
+
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
 
-    glutCreateWindow("garden thing");
+    glutCreateWindow("to be named");
 
     glutDisplayFunc(Display);
     glutIdleFunc(Idle); //constantly running
@@ -564,9 +605,7 @@ int main(int argc, char** argv) {
 
 
     glMatrixMode(GL_PROJECTION);
-
     glLoadIdentity();
-
     gluPerspective(95.0f, width / height, 0.1f, 500.0f);
 
     //camera
@@ -593,3 +632,4 @@ int main(int argc, char** argv) {
 
     glutMainLoop();
 }
+
