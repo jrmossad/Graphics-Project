@@ -14,8 +14,7 @@ class Room;
 void drawUnitCube();
 bool insideRectangle(Vector bottomLeft,Vector topRight, Vector p);
 bool validMove(Vector map[],int n,  Vector p);
-int vscwprintf(const wchar_t *format, va_list argptr);
-void printw(double x, double y, double z, double r, double g, double b, char* format, ...);
+void print(float x, float y, float z, char* string);
 void init();
 void Display(void);
 void mouseMovement(int x, int y);
@@ -377,6 +376,10 @@ Vector mapRectangles[] ={
         Vector(-4 + thickness, halfThickness , -2 + thickness), //top-right
 };
 
+//score
+int score = 0;
+int timeBonus = 501;
+
 //predefined door sizes
 float eighth[4] = {0.125, 0.125, 0.125, 0.125};
 float eighthBackHalf[4] = {0.125, 0.125, 0.25, 0.125};
@@ -465,52 +468,29 @@ bool validMove(Vector map[],int n,  Vector p)
     return valid;
 }
 
-
-//Printing Text On Screen
-int vscwprintf(const wchar_t *format, va_list argptr)
+//print text
+void print(float x, float y, float z, char* string)
 {
-    // Unlike vsnprintf(), vswprintf() does not tell you how many
-    // characters would have been written if there was space enough in
-    // the buffer - it just reports an error when there is not enough
-    // space.  Assume a moderately large machine so kilobytes of wchar_t
-    // on the stack is not a problem.
-    int buf_size = 1024;
-    while (buf_size < 1024 * 1024)
+    int len, i;
+
+    //set the position of the text in the window using the x and y coordinates
+    glWindowPos3f(x, y, z);
+
+    //get the length of the string to display
+    len = (int)strlen(string);
+
+    //loop to display character by character
+    for (i = 0; i < len; i++)
     {
-        va_list args;
-        va_copy(args, argptr);
-        wchar_t buffer[buf_size];
-        int fmt_size = vswprintf(buffer, sizeof(buffer)/sizeof(buffer[0]), format, args);
-        if (fmt_size >= 0)
-            return fmt_size;
-        buf_size *= 2;
+        glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, string[i]);
     }
-    return -1;
 }
 
-void printw(double x, double y, double z, double r, double g, double b, char* format, ...)
+void second(int val)
 {
-    va_list args;
-    int len;
-    int i;
-    char * text;
-
-    va_start(args, format);
-    len = _vscprintf(format, args) + 1;
-    text = (char*)malloc(len * sizeof(char));
-    vsprintf_s(text, len, format, args);
-    va_end(args);
-
-    glColor3f(r, g, b);
-    glRasterPos3f(x, y, z);
-
-    for (i = 0; text[i] != '\0'; i++)
-    {
-        if (i > 0)
-            glutBitmapCharacter(font_style, ' ');
-        glutBitmapCharacter(font_style, text[i]);
-    }
-    free(text);
+    timeBonus = std::max(timeBonus-1, 0);
+    glutPostRedisplay();						// redraw
+    glutTimerFunc(1000,second,0);					//recall the time function after 1000 ms and pass a zero value as an input to the time func.
 }
 
 
@@ -544,6 +524,9 @@ void init(){
     leftRoom.assignWall(1, 1);
     leftRoom.assignWall(2, 0);
     leftRoom.assignWall(3, 0);
+
+    //start score timer
+    second(0);
 }
 
 //===============================DISPLAY=================================
@@ -574,6 +557,15 @@ void Display(void) {
     rightBottomHallway.render();
     bottomRoom.render();
     leftRoom.render();
+
+    glColor3f(0.118, 0.565, 1);
+    char* p0s[20];
+    sprintf((char*)p0s, "Score: %d", score);
+    print(10, 860, 0, (char*)p0s);
+
+    char* p1s[20];
+    sprintf((char*)p1s, "Time bonus: %d", timeBonus);
+    print(10, 835, 0, (char*)p1s);
 
     glFlush();
 }
