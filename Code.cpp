@@ -2,52 +2,27 @@
 #include <vector>
 #include <math.h>
 #include <string>
+#include <stdio.h>
+#include <stdarg.h>
+#include <wchar.h>
+
+
+//=======================DEFINITIONS======================================
 #define DEGTORAD(x) x*3.1415/180.0
-#define INF 10000
-
-void drawUnitCube(){
-    glBegin(GL_QUADS);                // Begin drawing the color cube with 6 quads
-    // Top face (y = 0.5f)
-    // Define vertices in counter-clockwise (CCW) order with normal pointing out
-    glVertex3f(0.5f, 0.5f, -0.5f);
-    glVertex3f(-0.5f, 0.5f, -0.5f);
-    glVertex3f(-0.5f, 0.5f, 0.5f);
-    glVertex3f(0.5f, 0.5f, 0.5f);
-
-// Bottom face (y = -0.5f)
-    glVertex3f(0.5f, -0.5f, 0.5f);
-    glVertex3f(-0.5f, -0.5f, 0.5f);
-    glVertex3f(-0.5f, -0.5f, -0.5f);
-    glVertex3f(0.5f, -0.5f, -0.5f);
-
-// Front face  (z = 0.5f)
-    glVertex3f(0.5f, 0.5f, 0.5f);
-    glVertex3f(-0.5f, 0.5f, 0.5f);
-    glVertex3f(-0.5f, -0.5f, 0.5f);
-    glVertex3f(0.5f, -0.5f, 0.5f);
-
-// Back face (z = -0.5f)
-    glVertex3f(0.5f, -0.5f, -0.5f);
-    glVertex3f(-0.5f, -0.5f, -0.5f);
-    glVertex3f(-0.5f, 0.5f, -0.5f);
-    glVertex3f(0.5f, 0.5f, -0.5f);
-
-// Left face (x = -0.5f)
-    glVertex3f(-0.5f, 0.5f, 0.5f);
-    glVertex3f(-0.5f, 0.5f, -0.5f);
-    glVertex3f(-0.5f, -0.5f, -0.5f);
-    glVertex3f(-0.5f, -0.5f, 0.5f);
-
-// Right face (x = 0.5f)
-    glVertex3f(0.5f, 0.5f, -0.5f);
-    glVertex3f(0.5f, 0.5f, 0.5f);
-    glVertex3f(0.5f, -0.5f, 0.5f);
-    glVertex3f(0.5f, -0.5f, -0.5f);
-    glEnd();
-}
-
+class Vector;
+class Room;
+void drawUnitCube();
+bool insideRectangle(Vector bottomLeft,Vector topRight, Vector p);
+bool validMove(Vector map[],int n,  Vector p);
+int vscwprintf(const wchar_t *format, va_list argptr);
+void printw(double x, double y, double z, double r, double g, double b, char* format, ...);
+void init();
+void Display(void);
+void mouseMovement(int x, int y);
+void SpecialInput(int key, int x, int y);
+void key(unsigned char k, int x,int y);
+void Idle();
 //===============================CLASSES=================================
-
 class Vector
 {
 public:
@@ -353,26 +328,31 @@ public:
         drawRightWall(rightWall);
     }
 };
+//=============================GLOBAL-VARS===============================
 
 //camera
 Vector eye(0.0,0.5,0.0);
 Vector ref(1.0,0.5,0.0);
 Vector up(0.0,1.0,0.0);
 Vector cameraRotation(0.0,0.0,0.0);
+
+//movement speed
 float speed = 0.3;
 
+//screen
 int width = 1000;
 int height = 1000;
 float windowHeight = glutGet(GLUT_SCREEN_HEIGHT);
 float windowWidth = glutGet(GLUT_SCREEN_WIDTH);
+
+//mouse position
 float mouseX, mouseY;
 
+//wall/floor thickness
 float thickness = 0.05;
 float halfThickness = 0.025;
 
-//===============================Collision==================================
-
-//clock-wise
+//clock-wise array of bottom-left, top-right coordinates of rooms
 Vector mapRectangles[] ={
         //main room
         Vector(-2 + thickness, halfThickness , 2 - thickness), //bottom-left
@@ -397,18 +377,81 @@ Vector mapRectangles[] ={
         Vector(-4 + thickness, halfThickness , -2 + thickness), //top-right
 };
 
-bool insideRectangle(Vector bottomLeft,Vector topRight, Vector p)
-{
-    float margin = 0.02;
-    if(p.x > bottomLeft.x + margin && p.x < topRight.x - margin
-    && p.z > topRight.z + margin && p.z < bottomLeft.z - margin
-    && p.y >= halfThickness && p.y < 2){
-        return true;
-    }
-    return false;
+//predefined door sizes
+float eighth[4] = {0.125, 0.125, 0.125, 0.125};
+float eighthBackHalf[4] = {0.125, 0.125, 0.25, 0.125};
+float eighthFrontTwelfth[4] = {1.0 / 12.0, 0.125, 0.125, 0.125};
+
+//Room coordinates and dimensions
+Room mainRoom(0, 0, 0, 4, thickness, 4, 2, eighth);
+Room rightHallWay(3 - thickness, 0, 0, 2, thickness, 0.5, 1, eighth);
+Room rightRoom(5 - 2 * thickness, 0, 0, 2, thickness, 4, 2, eighthBackHalf);
+Room rightBottomHallway(5 - 2 * thickness, 0, 4 - thickness, 0.5, thickness, 4, 1, eighth);
+Room bottomRoom(5 - 2 * thickness, 0, 7.5 - 2 * thickness, 6, thickness, 3, 2, eighthFrontTwelfth);
+Room leftHallWay(-3 + thickness, 0, 0, 2, thickness, 0.5, 1, eighth);
+Room leftRoom(-5 + 2 * thickness, 0, 0, 2, thickness, 4, 2, eighth);
+
+//Screen font
+GLvoid *font_style = GLUT_BITMAP_TIMES_ROMAN_24;
+
+//===============================HELPER-Functions==================================
+
+//draws 1x1x1 cube
+void drawUnitCube(){
+    glBegin(GL_QUADS);                // Begin drawing the color cube with 6 quads
+    // Top face (y = 0.5f)
+    // Define vertices in counter-clockwise (CCW) order with normal pointing out
+    glVertex3f(0.5f, 0.5f, -0.5f);
+    glVertex3f(-0.5f, 0.5f, -0.5f);
+    glVertex3f(-0.5f, 0.5f, 0.5f);
+    glVertex3f(0.5f, 0.5f, 0.5f);
+
+// Bottom face (y = -0.5f)
+    glVertex3f(0.5f, -0.5f, 0.5f);
+    glVertex3f(-0.5f, -0.5f, 0.5f);
+    glVertex3f(-0.5f, -0.5f, -0.5f);
+    glVertex3f(0.5f, -0.5f, -0.5f);
+
+// Front face  (z = 0.5f)
+    glVertex3f(0.5f, 0.5f, 0.5f);
+    glVertex3f(-0.5f, 0.5f, 0.5f);
+    glVertex3f(-0.5f, -0.5f, 0.5f);
+    glVertex3f(0.5f, -0.5f, 0.5f);
+
+// Back face (z = -0.5f)
+    glVertex3f(0.5f, -0.5f, -0.5f);
+    glVertex3f(-0.5f, -0.5f, -0.5f);
+    glVertex3f(-0.5f, 0.5f, -0.5f);
+    glVertex3f(0.5f, 0.5f, -0.5f);
+
+// Left face (x = -0.5f)
+    glVertex3f(-0.5f, 0.5f, 0.5f);
+    glVertex3f(-0.5f, 0.5f, -0.5f);
+    glVertex3f(-0.5f, -0.5f, -0.5f);
+    glVertex3f(-0.5f, -0.5f, 0.5f);
+
+// Right face (x = 0.5f)
+    glVertex3f(0.5f, 0.5f, -0.5f);
+    glVertex3f(0.5f, 0.5f, 0.5f);
+    glVertex3f(0.5f, -0.5f, 0.5f);
+    glVertex3f(0.5f, -0.5f, -0.5f);
+    glEnd();
 }
 
-// Returns true if the point p lies inside the polygon[] with n vertices
+
+//if point is inside a rectangle characterized by bottom-left/top-right points
+bool insideRectangle(Vector bottomLeft,Vector topRight, Vector p)
+{
+float margin = 0.02;
+if(p.x > bottomLeft.x + margin && p.x < topRight.x - margin
+                                        && p.z > topRight.z + margin && p.z < bottomLeft.z - margin
+        && p.y >= halfThickness && p.y < 2){
+return true;
+}
+return false;
+}
+
+// Returns true if the point p lies inside the map
 bool validMove(Vector map[],int n,  Vector p)
 {
     //n is odd
@@ -423,23 +466,55 @@ bool validMove(Vector map[],int n,  Vector p)
 }
 
 
-//===============================Room-coordinates/dimensions=================================
+//Printing Text On Screen
+int vscwprintf(const wchar_t *format, va_list argptr)
+{
+    // Unlike vsnprintf(), vswprintf() does not tell you how many
+    // characters would have been written if there was space enough in
+    // the buffer - it just reports an error when there is not enough
+    // space.  Assume a moderately large machine so kilobytes of wchar_t
+    // on the stack is not a problem.
+    int buf_size = 1024;
+    while (buf_size < 1024 * 1024)
+    {
+        va_list args;
+        va_copy(args, argptr);
+        wchar_t buffer[buf_size];
+        int fmt_size = vswprintf(buffer, sizeof(buffer)/sizeof(buffer[0]), format, args);
+        if (fmt_size >= 0)
+            return fmt_size;
+        buf_size *= 2;
+    }
+    return -1;
+}
 
-//predefined door sizes
-float eighth[4] = {0.125, 0.125, 0.125, 0.125};
-float eighthBackHalf[4] = {0.125, 0.125, 0.25, 0.125};
-float eighthFrontTwelfth[4] = {1.0 / 12.0, 0.125, 0.125, 0.125};
+void printw(double x, double y, double z, double r, double g, double b, char* format, ...)
+{
+    va_list args;
+    int len;
+    int i;
+    char * text;
 
-Room mainRoom(0, 0, 0, 4, thickness, 4, 2, eighth);
-Room rightHallWay(3 - thickness, 0, 0, 2, thickness, 0.5, 1, eighth);
-Room rightRoom(5 - 2 * thickness, 0, 0, 2, thickness, 4, 2, eighthBackHalf);
-Room rightBottomHallway(5 - 2 * thickness, 0, 4 - thickness, 0.5, thickness, 4, 1, eighth);
-Room bottomRoom(5 - 2 * thickness, 0, 7.5 - 2 * thickness, 6, thickness, 3, 2, eighthFrontTwelfth);
-Room leftHallWay(-3 + thickness, 0, 0, 2, thickness, 0.5, 1, eighth);
-Room leftRoom(-5 + 2 * thickness, 0, 0, 2, thickness, 4, 2, eighth);
+    va_start(args, format);
+    len = _vscprintf(format, args) + 1;
+    text = (char*)malloc(len * sizeof(char));
+    vsprintf_s(text, len, format, args);
+    va_end(args);
 
-//===============================INIT=================================
+    glColor3f(r, g, b);
+    glRasterPos3f(x, y, z);
 
+    for (i = 0; text[i] != '\0'; i++)
+    {
+        if (i > 0)
+            glutBitmapCharacter(font_style, ' ');
+        glutBitmapCharacter(font_style, text[i]);
+    }
+    free(text);
+}
+
+
+//any initialization is done here
 void init(){
     mainRoom.assignWall(0, 1);
     mainRoom.assignWall(1, 1);
@@ -574,7 +649,7 @@ void key(unsigned char k, int x,int y)
     glutPostRedisplay();
 }
 
-//===============================IDLE=================================
+//===============================IDLE/ANIM=================================
 
 void Idle()
 {
