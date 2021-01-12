@@ -18,7 +18,6 @@
 
 //Textures
 GLTexture level1tex_walls;
-GLTexture level1tex_ground;
 GLTexture level2tex_walls;
 GLTexture level2tex_ground;
 GLTexture tex_ground;
@@ -929,7 +928,6 @@ void loadAssets() {
     skeleton.Load("Models/Skelet/Skelet.3ds");
     skull.Load("Models/Skull/dino--55k.3ds");
 
-    level1tex_ground.Load("Textures/Christmas_red.bmp");
     level1tex_walls.Load("Textures/christmas-snowmen.bmp");
     level2tex_ground.Load("Textures/halloween-textures2.bmp");
     level2tex_walls.Load("Textures/halloween-texture1.bmp");
