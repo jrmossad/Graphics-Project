@@ -1,0 +1,2 @@
+D:\GUC\Semster 7\DMET 502 graphics\Project\OpenGLMeshLoader19 - sky\Debug\OpenGLMeshLoader19.exe
+D:\GUC\Semster 7\DMET 502 graphics\Project\OpenGLMeshLoader19 - sky\Debug\OpenGLMeshLoader19.pdb
