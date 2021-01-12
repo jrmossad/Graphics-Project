@@ -6,7 +6,6 @@
 #include <stdarg.h>
 #include <wchar.h>
 
-
 //=======================DEFINITIONS======================================
 #define DEGTORAD(x) x*3.1415/180.0
 class Vector;
@@ -77,6 +76,15 @@ public:
         x -= vec.x;
         y -= vec.y;
         z -= vec.z;
+
+        return *this;
+    }
+
+    Vector& operator = (Vector vec)
+    {
+        x = vec.x;
+        y = vec.y;
+        z = vec.z;
 
         return *this;
     }
@@ -333,7 +341,10 @@ public:
 Vector eye(0.0,0.5,0.0);
 Vector ref(1.0,0.5,0.0);
 Vector up(0.0,1.0,0.0);
+bool firstPerson = true;
+Vector playerPos(0.0, 0.5, 0.0);
 Vector cameraRotation(0.0,0.0,0.0);
+float camDistance = 0.4;
 
 //movement speed
 float speed = 0.3;
@@ -394,10 +405,18 @@ Room bottomRoom(5 - 2 * thickness, 0, 7.5 - 2 * thickness, 6, thickness, 3, 2, e
 Room leftHallWay(-3 + thickness, 0, 0, 2, thickness, 0.5, 1, eighth);
 Room leftRoom(-5 + 2 * thickness, 0, 0, 2, thickness, 4, 2, eighth);
 
-//Screen font
-GLvoid *font_style = GLUT_BITMAP_TIMES_ROMAN_24;
-
 //===============================HELPER-Functions==================================
+
+//draws the player
+void drawPlayer(float x, float y, float z){
+    glPushMatrix();
+    glTranslated(x, thickness + 0.2, z);
+    glScaled(0.2,0.4, 0.2);
+    //TODO: load model instead of cube
+    glRotated(-cameraRotation.x, 0, 1, 0);
+    drawUnitCube();
+    glPopMatrix();
+}
 
 //draws 1x1x1 cube
 void drawUnitCube(){
@@ -533,24 +552,41 @@ void init(){
 
 void Display(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     glLoadIdentity();
 
-    glRotated(cameraRotation.y, 1, 0, 0);
-    glRotated(cameraRotation.x, 0, 1, 0);
 
-    gluLookAt(eye.x,
-              eye.y,
-              eye.z,
-              eye.x + 1,
-              eye.y,
-              eye.z,
-              up.x,
-              up.y,
-              up.z);
+    //camera initialization
+    if(firstPerson) {
+        glRotated(cameraRotation.y, 1, 0, 0);
+        glRotated(cameraRotation.x, 0, 1, 0);
 
+        gluLookAt(eye.x,
+                  eye.y,
+                  eye.z,
+                  eye.x + 1,
+                  eye.y,
+                  eye.z,
+                  up.x,
+                  up.y,
+                  up.z);
+    } else{
+
+        gluLookAt(eye.x - cos(DEGTORAD(cameraRotation.x)) * camDistance,
+                  eye.y - sin(DEGTORAD(cameraRotation.y)) * 0.3,
+                  eye.z - sin(DEGTORAD(cameraRotation.x)) * camDistance,
+                  playerPos.x,
+                  playerPos.y,
+                  playerPos.z,
+                  up.x,
+                  up.y,
+                  up.z);
+
+        //render the player
+        drawPlayer(playerPos.x, playerPos.y, playerPos.z);
+    }
+
+    //room rendering
     mainRoom.render();
-
     rightHallWay.render();
     leftHallWay.render();
     rightRoom.render();
@@ -558,14 +594,16 @@ void Display(void) {
     bottomRoom.render();
     leftRoom.render();
 
+    //draw score
     glColor3f(0.118, 0.565, 1);
     char* p0s[20];
     sprintf((char*)p0s, "Score: %d", score);
-    print(10, 860, 0, (char*)p0s);
+    print(10, width - 130, 0, (char*)p0s);
 
+    //draw time bonus
     char* p1s[20];
     sprintf((char*)p1s, "Time bonus: %d", timeBonus);
-    print(10, 835, 0, (char*)p1s);
+    print(10, width - 155, 0, (char*)p1s);
 
     glFlush();
 }
@@ -579,14 +617,29 @@ void mouseMovement(int x, int y)
 
     mouseX = x;
     mouseY = y;
+
+    //if camera runs out of space
     if (mouseX <= 0 || mouseX >= width - 1)
         glutWarpPointer(width / 2, y);
 
     if (mouseY <= 0 || mouseY >= height - 1)
         glutWarpPointer(x, height / 2);
 
+
+
     cameraRotation.x += diffX;
-    cameraRotation.y += diffY;
+
+    //if camera rotates more than 90 degrees up or down
+    if(cameraRotation.y  + diffY >= 90){
+        cameraRotation.y = 90;
+    }
+    else if(cameraRotation.y + diffY <= -90){
+        cameraRotation.y = -90;
+    }
+    else{
+        cameraRotation.y += diffY;
+    }
+
 
     glutPostRedisplay();
 }
@@ -595,32 +648,38 @@ void mouseMovement(int x, int y)
 
 void SpecialInput(int key, int x, int y)
 {
-    Vector after(eye.x ,halfThickness, eye.z);
-
+    Vector after(playerPos.x,playerPos.y,playerPos.z);
+    Vector Movement(0.0,0.0,0.0);
     switch(key)
     {
         case GLUT_KEY_UP:
-            after.x += cos(DEGTORAD(cameraRotation.x))*speed;
-            after.z += sin(DEGTORAD(cameraRotation.x))*speed;
+            Movement.x += cos(DEGTORAD(cameraRotation.x))*speed;
+            Movement.z += sin(DEGTORAD(cameraRotation.x))*speed;
             break;
         case GLUT_KEY_DOWN:
-            after.x -= cos(DEGTORAD(cameraRotation.x))*speed;
-            after.z -= sin(DEGTORAD(cameraRotation.x))*speed;
+            Movement.x -= cos(DEGTORAD(cameraRotation.x))*speed;
+            Movement.z -= sin(DEGTORAD(cameraRotation.x))*speed;
             break;
         case GLUT_KEY_LEFT:
-            after.x += sin(DEGTORAD(cameraRotation.x))*speed;
-            after.z -= cos(DEGTORAD(cameraRotation.x))*speed;
+            Movement.x += sin(DEGTORAD(cameraRotation.x))*speed;
+            Movement.z -= cos(DEGTORAD(cameraRotation.x))*speed;
             break;
         case GLUT_KEY_RIGHT:
-            after.x -= sin(DEGTORAD(cameraRotation.x))*speed;
-            after.z += cos(DEGTORAD(cameraRotation.x))*speed;
+            Movement.x -= sin(DEGTORAD(cameraRotation.x))*speed;
+            Movement.z += cos(DEGTORAD(cameraRotation.x))*speed;
             break;
     }
 
+    after += Movement;
     int n = sizeof(mapRectangles) / sizeof(mapRectangles[0]);
     if(validMove(mapRectangles, n, after)){
-        eye.x = after.x;
-        eye.z = after.z;
+        playerPos = after;
+        eye += Movement;
+    }
+    else{
+        //collision logic
+        score = std::max(0, score - 2);
+        //TODO: add collision sound here
     }
 
     glutPostRedisplay();
@@ -629,13 +688,26 @@ void SpecialInput(int key, int x, int y)
 void key(unsigned char k, int x,int y)
 {
 
-    //up down for debugging
-    if (k == 'z' || k == 'Z'){
-        eye.y  += speed;
+    //distance between camera, player
+    if(!firstPerson) {
+        if (k == 'z' || k == 'Z') {
+            camDistance = std::max(0.3,camDistance - 0.1);
+
+        }
+
+        if (k == 'x' || k == 'X') {
+            camDistance = std::min(0.8,camDistance + 0.1);
+        }
     }
 
-    if (k == 'x' || k == 'X'){
-        eye.y  -= speed;
+    //toggle first person
+    if (k == 'c' || k == 'C'){
+        if(!firstPerson){
+            eye = playerPos;
+            cameraRotation.y = 0;
+        }
+
+        firstPerson = !firstPerson;
     }
 
     glutPostRedisplay();
