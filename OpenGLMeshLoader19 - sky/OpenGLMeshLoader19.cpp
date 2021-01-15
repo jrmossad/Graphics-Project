@@ -23,6 +23,8 @@ enum Level {
     LEVEL_1, LEVEL_2
 };
 
+bool hasGameEnded = false;
+
 //Textures
 GLTexture level1tex_walls;
 GLTexture level2tex_walls;
@@ -285,7 +287,6 @@ public:
             glPopMatrix();
         }
     }
-
 
 
     void drawBackWall(int type) {
@@ -682,6 +683,8 @@ Vector movingWalls[] = {
 
 double wallsTranslation = 0.0;
 bool areWallsMovingUp = false;
+
+Vector levelDoor = Vector(0, thickness, -2);
 
 // Balls
 Ball redBall = Ball(Vector(5.5, 0, 0), RED);
@@ -1115,8 +1118,7 @@ void drawMovingWalls() {
 }
 
 bool hasCollidedWithMovingWall(Vector after) {
-    // TODO: Change this to level 1.
-    if (level == LEVEL_2) return false;
+    if (level == LEVEL_1) return false;
 
     if (wallsTranslation <= -1.0) return false;
 
@@ -1255,7 +1257,7 @@ void drawLevelDoor() {
     glColor3f(0.25, 0.1, 0.35);
 
     glPushMatrix();
-    glTranslated(0, thickness, -2);
+    glTranslated(levelDoor.x, levelDoor.y, levelDoor.z);
     glScaled(10, 40, 1);
     glutSolidCube(thickness);
     glPopMatrix();
@@ -1360,8 +1362,7 @@ void Display(void) {
     glPushMatrix();
 
     drawSpikes();
-    // TODO: Change this to level 2 only.
-    if (level == LEVEL_1) {
+    if (level == LEVEL_2) {
         drawMovingWalls();
     }
 
@@ -1427,7 +1428,6 @@ void mouseMovement(int x, int y)
         cameraRotation.y += diffY;
     }
 
-
     glutPostRedisplay();
 }
 
@@ -1470,6 +1470,41 @@ void SpecialInput(int key, int x, int y)
         else {
             playSound(0);
         }
+
+        if (!isLevelDoorClosed() && levelDoor.z >= playerPos.z && levelDoor.x - 0.2 <= playerPos.x && playerPos.x <= levelDoor.x + 0.2) {
+            if (level == LEVEL_1) {
+                level = LEVEL_2;
+   
+                playerPos = Vector(0.0, 0.5, 0.0);
+                eye = playerPos;
+
+                timeBonus = 201;
+   
+                wallsTranslation = 0.0;
+                areWallsMovingUp = false;
+   
+                redBall.pos = Vector(5.5, 0, 0);
+                greenBall.pos = Vector(-5.5, 0, 0);
+                blueBall.pos = Vector(4.9, 0, 8.5);
+
+                redBall.isPickedUp = false;
+                greenBall.isPickedUp = false;
+                blueBall.isPickedUp = false;
+   
+                redSlot.isBallPlaced = false;
+                greenSlot.isBallPlaced = false;
+                blueSlot.isBallPlaced = false;
+
+                pickedBall = NONE;
+   
+                playSound(6);
+                playMusic(1);
+            }
+            else {
+                hasGameEnded = true;
+                playSound(7);
+            }
+        }
     }
     else {
         //collision logic
@@ -1483,18 +1518,22 @@ void SpecialInput(int key, int x, int y)
 void dropPickedUpBall() {
     switch (pickedBall) {
     case RED:
-        redBall.pos = playerPos;
+        redBall.pos.x = playerPos.x;
+        redBall.pos.z = playerPos.z;
         redBall.isPickedUp = false;
         break;
     case GREEN:
-        redBall.pos = playerPos;
-        redBall.isPickedUp = false;
+        greenBall.pos.x = playerPos.x;
+        greenBall.pos.z = playerPos.z;
+        greenBall.isPickedUp = false;
         break;
     case BLUE:
-        redBall.pos = playerPos;
-        redBall.isPickedUp = false;
+        blueBall.pos.x = playerPos.x;
+        blueBall.pos.z = playerPos.z;
+        blueBall.isPickedUp = false;
         break;
     }
+    pickedBall = NONE;
 }
 
 void key(unsigned char k, int x, int y)
@@ -1598,6 +1637,7 @@ void key(unsigned char k, int x, int y)
 //===============================MUSIC=================================
 
 void playMusic(int musicConstant) {
+    mciSendString("close mp3", NULL, 0, NULL);
     switch (musicConstant) {
     case 0:
         mciSendString("open \"assets/music/music_1.mp3\" type mpegvideo alias mp3", NULL, 0, NULL);
