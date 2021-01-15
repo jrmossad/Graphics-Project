@@ -561,18 +561,21 @@ Room leftRoom(-5 + 2 * thickness, 0, 0, 2, thickness, 4, 2, eighth);
 void drawPlayer(float x, float y, float z) {
     glPushMatrix();
 
-    //TODO: replace the 0.2 with half the player's height
-    glTranslated(x, thickness + 0.2, z);
+    if (level == LEVEL_1) {
+        glTranslated(x, thickness + 0.2, z);
+    }
+    else {
+        glTranslated(x, thickness + 0.05, z);
+    }
 
-    //TODO: adjust the scaling factors
-    // until you get a reasonable size for the player
     glScaled(0.2, 0.4, 0.2);
-    glRotated(-cameraRotation.x, 0, 1, 0);
+    glRotated(-cameraRotation.x + 90, 0, 1, 0);
     if (level == LEVEL_1) {
         RenderSanta(playerPos.x, playerPos.z);
     } else {
         RenderPlayer2(playerPos.x, playerPos.z);
     }
+
     glPopMatrix();
 }
 
@@ -826,8 +829,7 @@ void RenderTree(double x = 0.0, double z = 0.0) {
 void RenderSanta(double x = 0.0, double z = 0.0) {
     glDisable(GL_LIGHTING);
     glPushMatrix();
-    glTranslated(x, 0.4, z);
-    glScaled(0.004, 0.004, 0.004);
+    glScaled(0.0075, 0.0075, 0.0075);
     santa.Draw();
     glPopMatrix();
     glEnable(GL_LIGHTING);
@@ -846,8 +848,7 @@ void RenderPresent(double x = 0.0, double z = 0.0) {
 void RenderPlayer2(double x = 0.0, double z = 0.0) {
     glDisable(GL_LIGHTING);
     glPushMatrix();
-    glTranslated(x, 0.2, z);
-    glScaled(0.005, 0.005, 0.005);
+    glScaled(0.02, 0.02, 0.02);
     player2.Draw();
     glPopMatrix();
     glEnable(GL_LIGHTING);
