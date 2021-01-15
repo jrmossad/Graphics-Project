@@ -150,7 +150,7 @@ public:
 };
 
 enum Color {
-    RED, GREEN, BLUE
+    RED, GREEN, BLUE, NONE
 };
 
 class Ball
@@ -693,6 +693,9 @@ Slot redSlot = Slot(Vector(-1.45, 0, -1.7), RED);
 Slot greenSlot = Slot(Vector(-1.1, 0, -1.7), GREEN);
 Slot blueSlot = Slot(Vector(-0.75, 0, -1.7), BLUE);
 
+// Picked Ball
+Color pickedBall = NONE;
+
 //score
 int score = 0;
 int timeBonus = 201;
@@ -1145,25 +1148,31 @@ bool hasCollidedWithMovingWall(Vector after) {
 
 void drawBalls() {
     // Red Ball
-    glColor3f(0.8, 0.2, 0.2);
-    glPushMatrix();
-    glTranslated(redBall.pos.x, redBall.pos.y + thickness + 0.1, redBall.pos.z);
-    glutSolidSphere(0.1, 30, 60);
-    glPopMatrix();
+    if (!redBall.isPickedUp && !redSlot.isBallPlaced) {
+        glColor3f(0.8, 0.2, 0.2);
+        glPushMatrix();
+        glTranslated(redBall.pos.x, redBall.pos.y + thickness + 0.1, redBall.pos.z);
+        glutSolidSphere(0.1, 30, 60);
+        glPopMatrix();
+    }
 
     // Green Ball
-    glColor3f(0.2, 0.8, 0.2);
-    glPushMatrix();
-    glTranslated(greenBall.pos.x, greenBall.pos.y + thickness + 0.1, greenBall.pos.z);
-    glutSolidSphere(0.1, 30, 60);
-    glPopMatrix();
+    if (!greenBall.isPickedUp && !greenSlot.isBallPlaced) {
+        glColor3f(0.2, 0.8, 0.2);
+        glPushMatrix();
+        glTranslated(greenBall.pos.x, greenBall.pos.y + thickness + 0.1, greenBall.pos.z);
+        glutSolidSphere(0.1, 30, 60);
+        glPopMatrix();
+    }
 
     // Blue Ball
-    glColor3f(0.2, 0.2, 0.8);
-    glPushMatrix();
-    glTranslated(blueBall.pos.x, blueBall.pos.y + thickness + 0.1, blueBall.pos.z);
-    glutSolidSphere(0.1, 30, 60);
-    glPopMatrix();
+    if (!blueBall.isPickedUp && !blueSlot.isBallPlaced) {
+        glColor3f(0.2, 0.2, 0.8);
+        glPushMatrix();
+        glTranslated(blueBall.pos.x, blueBall.pos.y + thickness + 0.1, blueBall.pos.z);
+        glutSolidSphere(0.1, 30, 60);
+        glPopMatrix();
+    }
 }
 
 void drawSlots() {
@@ -1471,6 +1480,23 @@ void SpecialInput(int key, int x, int y)
     glutPostRedisplay();
 }
 
+void dropPickedUpBall() {
+    switch (pickedBall) {
+    case RED:
+        redBall.pos = playerPos;
+        redBall.isPickedUp = false;
+        break;
+    case GREEN:
+        redBall.pos = playerPos;
+        redBall.isPickedUp = false;
+        break;
+    case BLUE:
+        redBall.pos = playerPos;
+        redBall.isPickedUp = false;
+        break;
+    }
+}
+
 void key(unsigned char k, int x, int y)
 {
     if (k == GLUT_KEY_ESCAPE)
@@ -1480,7 +1506,6 @@ void key(unsigned char k, int x, int y)
     if (!firstPerson) {
         if (k == 'z' || k == 'Z') {
             camDistance = max(0.3, camDistance - 0.1);
-
         }
 
         if (k == 'x' || k == 'X') {
@@ -1496,6 +1521,75 @@ void key(unsigned char k, int x, int y)
         }
 
         firstPerson = !firstPerson;
+    }
+
+    // Pick up a ball.
+    if (k == 'p' || k == 'P') {
+        if (redBall.pos.x - 0.4 <= playerPos.x && playerPos.x <= redBall.pos.x + 0.4
+            && redBall.pos.z - 0.4 <= playerPos.z && playerPos.z <= redBall.pos.z + 0.4
+            && !redSlot.isBallPlaced) {
+            dropPickedUpBall();
+            redBall.isPickedUp = true;
+            pickedBall = RED;
+            playSound(3);
+        } else if (greenBall.pos.x - 0.4 <= playerPos.x && playerPos.x <= greenBall.pos.x + 0.4
+            && greenBall.pos.z - 0.4 <= playerPos.z && playerPos.z <= greenBall.pos.z + 0.4
+            && !greenSlot.isBallPlaced) {
+            dropPickedUpBall();
+            greenBall.isPickedUp = true;
+            pickedBall = GREEN;
+            playSound(3);
+        } else if (blueBall.pos.x - 0.4 <= playerPos.x && playerPos.x <= blueBall.pos.x + 0.4
+            && blueBall.pos.z - 0.4 <= playerPos.z && playerPos.z <= blueBall.pos.z + 0.4
+            && !blueSlot.isBallPlaced) {
+            dropPickedUpBall();
+            blueBall.isPickedUp = true;
+            pickedBall = BLUE;
+            playSound(3);
+        }
+    }
+
+    // Drop the picked ball.
+    if (k == 'd' || k == 'D') {
+        switch (pickedBall) {
+        case RED:
+            if (redSlot.pos.x - 0.4 <= playerPos.x && playerPos.x <= redSlot.pos.x + 0.4
+                && redSlot.pos.z - 0.4 <= playerPos.z && playerPos.z <= redSlot.pos.z + 0.4) {
+                redSlot.isBallPlaced = true;
+                score += timeBonus;
+                if (!isLevelDoorClosed()) playSound(5);
+            }
+            redBall.pos.x = playerPos.x;
+            redBall.pos.z = playerPos.z;
+            redBall.isPickedUp = false;
+            if (isLevelDoorClosed()) playSound(4);
+            break;
+        case GREEN:
+            if (greenSlot.pos.x - 0.4 <= playerPos.x && playerPos.x <= greenSlot.pos.x + 0.4
+                && greenSlot.pos.z - 0.4 <= playerPos.z && playerPos.z <= greenSlot.pos.z + 0.4) {
+                greenSlot.isBallPlaced = true;
+                score += timeBonus;
+                if (!isLevelDoorClosed()) playSound(5);
+            }
+            greenBall.pos.x = playerPos.x;
+            greenBall.pos.z = playerPos.z;
+            greenBall.isPickedUp = false;
+            if (isLevelDoorClosed()) playSound(4);
+            break;
+        case BLUE:
+            if (blueSlot.pos.x - 0.4 <= playerPos.x && playerPos.x <= blueSlot.pos.x + 0.4
+                && blueSlot.pos.z - 0.4 <= playerPos.z && playerPos.z <= blueSlot.pos.z + 0.4) {
+                blueSlot.isBallPlaced = true;
+                score += timeBonus;
+                if (!isLevelDoorClosed()) playSound(5);
+            }
+            blueBall.pos.x = playerPos.x;
+            blueBall.pos.z = playerPos.z;
+            blueBall.isPickedUp = false;
+            if (isLevelDoorClosed()) playSound(4);
+            break;
+        }
+        pickedBall = NONE;
     }
 
     glutPostRedisplay();
