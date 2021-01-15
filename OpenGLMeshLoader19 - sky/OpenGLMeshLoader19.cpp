@@ -61,6 +61,8 @@ void RenderPlayer2(double x, double z);
 void drawSpikes();
 void drawMovingWalls();
 void drawLevelDoor();
+void drawSun();
+void drawMoon();
 
 //===============================CLASSES=================================
 class Vector
@@ -1375,9 +1377,11 @@ void Display(void) {
 
     // Sky color
     if (level == LEVEL_1) {
+        drawSun();
         glColor3f(0.118, 0.565, 1);
     }
     else {
+        drawMoon();
         glColor3f(0.2, 0.2, 0.2);
     }
 
@@ -1534,6 +1538,22 @@ void dropPickedUpBall() {
         break;
     }
     pickedBall = NONE;
+}
+
+void drawSun() {
+    glColor3f(0.9, 0.7, 0.15);
+    glPushMatrix();
+    glTranslated(0, 20, 0);
+    glutSolidSphere(3, 30, 60);
+    glPopMatrix();
+}
+
+void drawMoon() {
+    glColor3f(0.9, 0.9, 0.9);
+    glPushMatrix();
+    glTranslated(0, 20, 0);
+    glutSolidSphere(2, 30, 60);
+    glPopMatrix();
 }
 
 void key(unsigned char k, int x, int y)
