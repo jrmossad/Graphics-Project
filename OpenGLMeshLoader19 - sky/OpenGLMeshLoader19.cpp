@@ -50,9 +50,11 @@ void loadAssets();
 void drawTexturedFace(int type, GLTexture _tex, int rep);
 void playMusic(int musicConstant);
 void playSound(int soundConstant);
+bool hasSteppedOnSpike();
 void drawGameText();
 void RenderSanta(double x, double z);
 void RenderPlayer2(double x, double z);
+void drawSpikes();
 
 //===============================CLASSES=================================
 class Vector
@@ -537,6 +539,101 @@ Vector mapRectangles[] = {
     Vector(-4 + thickness, halfThickness , -2 + thickness), //top-right
 };
 
+Vector spikes[] = {
+    // Corner Room
+    Vector(6.5, 0.0, 8.0),
+    Vector(6.5, 0.0, 7.5),
+    Vector(6.5, 0.0, 7.0),
+    Vector(6.5, 0.0, 6.5),
+           
+    Vector(6.5, 0.0, 8.0),
+    Vector(6.5, 0.0, 7.5),
+    Vector(6.5, 0.0, 7.0),
+    Vector(6.5, 0.0, 6.5),
+
+    Vector(5.5, 0.0, 8.0),
+    Vector(5.5, 0.0, 7.5),
+    Vector(5.5, 0.0, 7.0),
+    Vector(5.5, 0.0, 6.5),
+
+    Vector(5.0, 0.0, 8.0),
+    Vector(5.0, 0.0, 7.5),
+    Vector(5.0, 0.0, 7.0),
+    Vector(5.0, 0.0, 6.5),
+
+    Vector(4.5, 0.0, 8.0),
+    Vector(4.5, 0.0, 7.5),
+    Vector(4.5, 0.0, 7.0),
+    Vector(4.5, 0.0, 6.5),
+
+    Vector(4.0, 0.0, 8.0),
+    Vector(4.0, 0.0, 7.5),
+    Vector(4.0, 0.0, 7.0),
+    Vector(4.0, 0.0, 6.5),
+
+    Vector(3.5, 0.0, 8.0),
+    Vector(3.5, 0.0, 7.5),
+    Vector(3.5, 0.0, 7.0),
+    Vector(3.5, 0.0, 6.5),
+
+    Vector(3.0, 0.0, 8.0),
+    Vector(3.0, 0.0, 7.5),
+    Vector(3.0, 0.0, 7.0),
+    Vector(3.0, 0.0, 6.5),
+
+    // Top Room
+    Vector(5.0, 0.0, -1.0),
+    Vector(5.0, 0.0, -0.5),
+    Vector(5.0, 0.0, 0.0),
+    Vector(5.0, 0.0, 0.5),
+    Vector(5.0, 0.0, 1.0),
+
+    Vector(4.5, 0.0, -1.0),
+    Vector(4.5, 0.0, -0.5),
+    Vector(4.5, 0.0, 0.0),
+    Vector(4.5, 0.0, 0.5),
+    Vector(4.5, 0.0, 1.0),
+
+    // Middle Room
+    Vector(-1.0, 0.0, -1.0),
+    Vector(-1.0, 0.0, -0.5),
+    Vector(-1.0, 0.0, 0.0),
+    Vector(-1.0, 0.0, 0.5),
+    Vector(-1.0, 0.0, 1.0),
+
+    Vector(-0.5, 0.0, -1.0),
+    Vector(-0.5, 0.0, -0.5),
+    Vector(-0.5, 0.0, 0.5),
+    Vector(-0.5, 0.0, 1.0),
+    
+    Vector(0.0, 0.0, -1.0),
+    Vector(0.0, 0.0, 1.0),
+
+    Vector(0.5, 0.0, -1.0),
+    Vector(0.5, 0.0, -0.5),
+    Vector(0.5, 0.0, 0.5),
+    Vector(0.5, 0.0, 1.0),
+
+    Vector(1.0, 0.0, -1.0),
+    Vector(1.0, 0.0, -0.5),
+    Vector(1.0, 0.0, 0.0),
+    Vector(1.0, 0.0, 0.5),
+    Vector(1.0, 0.0, 1.0),
+
+    // Bottom Room
+    Vector(-5.0, 0.0, -1.0),
+    Vector(-5.0, 0.0, -0.5),
+    Vector(-5.0, 0.0, 0.0),
+    Vector(-5.0, 0.0, 0.5),
+    Vector(-5.0, 0.0, 1.0),
+
+    Vector(-4.5, 0.0, -1.0),
+    Vector(-4.5, 0.0, -0.5),
+    Vector(-4.5, 0.0, 0.0),
+    Vector(-4.5, 0.0, 0.5),
+    Vector(-4.5, 0.0, 1.0)
+};
+
 //score
 int score = 0;
 int timeBonus = 501;
@@ -905,9 +1002,44 @@ void RenderGround()
     glColor3f(1, 1, 1);	// Set material back to white instead of grey used for the ground texture.
 }
 
+void drawSpikes() {
+    int spikesCount = sizeof(spikes) / sizeof(spikes[0]);
+
+    glColor3f(0.0, 0.0, 1.0);
+
+    for (int i = 0; i < spikesCount; i++) {
+        glPushMatrix();
+
+        glTranslated(spikes[i].x, 0, spikes[i].z);
+        glRotated(-90, 1, 0, 0);
+        glutSolidCone(0.1, 0.2, 30, 60);
+
+        glPopMatrix();
+    }
+}
+
+bool hasSteppedOnSpike() {
+    int spikesCount = sizeof(spikes) / sizeof(spikes[0]);
+
+    for (int i = 0; i < spikesCount; i++) {
+        if (spikes[i].x - 0.1 <= playerPos.x && playerPos.x <= spikes[i].x + 0.1
+            && spikes[i].z - 0.1 <= playerPos.z && playerPos.z <= spikes[i].z + 0.1) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void drawGameText() {
+    if (level == LEVEL_1) {
+        glColor3f(0.0, 0.0, 0.0);
+    }
+    else {
+        glColor3f(1.0, 1.0, 1.0);
+    }
+
     //draw score
-    glColor3f(1.0, 1.0, 1.0);
     char* p0s[20];
     sprintf((char*)p0s, "Score: %d", score);
     print(10, screenH - 30, (char*)p0s);
@@ -916,6 +1048,11 @@ void drawGameText() {
     char* p1s[20];
     sprintf((char*)p1s, "Time bonus: %d", timeBonus);
     print(10, screenH - 60, (char*)p1s);
+
+    //draw player pos
+    char* p2s[20];
+    sprintf((char*)p2s, "X: %f, Y: %f, Z: %f", playerPos.x, playerPos.y, playerPos.z);
+    print(10, screenH - 90, (char*)p2s);
 }
 
 //===============================DISPLAY=================================
@@ -953,7 +1090,6 @@ void Display(void) {
             up.y,
             up.z);
 
-        //TODO: render the player here
         glColor3f(1, 1, 1);
         drawPlayer(playerPos.x, playerPos.y, playerPos.z);
     }
@@ -988,11 +1124,19 @@ void Display(void) {
     bottomRoom.render();
     leftRoom.render();
 
-    drawGameText();
+    // TODO: Draw obstacles.
+    drawSpikes();
 
     glDisable(GL_LIGHTING);	// Disable lighting
     glPushMatrix();
-    glColor3f(0.118, 0.565, 1);
+
+    // Sky color
+    if (level == LEVEL_1) {
+        glColor3f(0.118, 0.565, 1);
+    }
+    else {
+        glColor3f(0.2, 0.2, 0.2);
+    }
 
     GLUquadricObj* qobj;
     qobj = gluNewQuadric();
@@ -1006,6 +1150,7 @@ void Display(void) {
     glPopMatrix();
     glEnable(GL_LIGHTING);	// Enable lighting again for other entites coming throung the pipeline.
 
+    drawGameText();
 
     glFlush();
 }
@@ -1075,7 +1220,14 @@ void SpecialInput(int key, int x, int y)
     if (validMove(mapRectangles, n, after)) {
         playerPos = after;
         eye += Movement;
-        playSound(0);
+
+        if (hasSteppedOnSpike()) {
+            score = max(0, score - 2);
+            playSound(2);
+        }
+        else {
+            playSound(0);
+        }
     }
     else {
         //collision logic
