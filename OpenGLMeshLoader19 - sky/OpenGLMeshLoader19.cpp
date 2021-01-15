@@ -52,11 +52,13 @@ void playMusic(int musicConstant);
 void playSound(int soundConstant);
 bool hasSteppedOnSpike();
 bool hasCollidedWithMovingWall(Vector after);
+bool isLevelDoorClosed();
 void drawGameText();
 void RenderSanta(double x, double z);
 void RenderPlayer2(double x, double z);
 void drawSpikes();
 void drawMovingWalls();
+void drawLevelDoor();
 
 //===============================CLASSES=================================
 class Vector
@@ -145,6 +147,34 @@ public:
 
         return *this;
     }
+};
+
+enum Color {
+    RED, GREEN, BLUE
+};
+
+class Ball
+{
+public:
+
+    Vector pos;
+    Color color;
+
+    bool isPickedUp;
+
+    Ball(Vector _position, Color _color) : pos(_position), color(_color) {}
+};
+
+class Slot
+{
+public:
+
+    Vector pos;
+    Color color;
+
+    bool isBallPlaced;
+
+    Slot(Vector _position, Color _color) : pos(_position), color(_color) {}
 };
 
 class Room
@@ -653,9 +683,19 @@ Vector movingWalls[] = {
 double wallsTranslation = 0.0;
 bool areWallsMovingUp = false;
 
+// Balls
+Ball redBall = Ball(Vector(5.5, 0, 0), RED);
+Ball greenBall = Ball(Vector(-5.5, 0, 0), GREEN);
+Ball blueBall = Ball(Vector(4.9, 0, 8.5), BLUE);
+
+// Slots
+Slot redSlot = Slot(Vector(-1.45, 0, -1.7), RED);
+Slot greenSlot = Slot(Vector(-1.1, 0, -1.7), GREEN);
+Slot blueSlot = Slot(Vector(-0.75, 0, -1.7), BLUE);
+
 //score
 int score = 0;
-int timeBonus = 501;
+int timeBonus = 201;
 
 //predefined door sizes
 float eighth[4] = { 0.125, 0.125, 0.125, 0.125 };
@@ -833,11 +873,9 @@ bool validMove(Vector map[], int n, Vector p)
         valid |= insideRectangle(map[i], map[i + 1], p);
     }
 
-    //    TODO: when player collects all the balls
-    //    this will allow the player to walk into the winning door
-    //    if(/*win*/){
-    //        valid |=  insideRectangle(winningRoom[0], winningRoom[1], p);
-    //    }
+    if (!isLevelDoorClosed()) {
+        valid |=  insideRectangle(winningRoom[0], winningRoom[1], p);
+    }
 
     return valid;
 }
@@ -1024,7 +1062,7 @@ void RenderGround()
 void drawSpikes() {
     int spikesCount = sizeof(spikes) / sizeof(spikes[0]);
 
-    glColor3f(0.0, 0.0, 1.0);
+    glColor3f(0.0, 0.0, 0.0);
 
     for (int i = 0; i < spikesCount; i++) {
         glPushMatrix();
@@ -1053,7 +1091,7 @@ bool hasSteppedOnSpike() {
 void drawMovingWalls() {
     int movingWallsCount = sizeof(movingWalls) / sizeof(movingWalls[0]);
 
-    glColor3f(0.2, 0.1, 0.5);
+    glColor3f(0.35, 0.25, 0.15);
 
     for (int i = 0; i < movingWallsCount; i++) {
         glPushMatrix();
@@ -1105,6 +1143,119 @@ bool hasCollidedWithMovingWall(Vector after) {
     return false;
 }
 
+void drawBalls() {
+    // Red Ball
+    glColor3f(0.8, 0.2, 0.2);
+    glPushMatrix();
+    glTranslated(redBall.pos.x, redBall.pos.y + thickness + 0.1, redBall.pos.z);
+    glutSolidSphere(0.1, 30, 60);
+    glPopMatrix();
+
+    // Green Ball
+    glColor3f(0.2, 0.8, 0.2);
+    glPushMatrix();
+    glTranslated(greenBall.pos.x, greenBall.pos.y + thickness + 0.1, greenBall.pos.z);
+    glutSolidSphere(0.1, 30, 60);
+    glPopMatrix();
+
+    // Blue Ball
+    glColor3f(0.2, 0.2, 0.8);
+    glPushMatrix();
+    glTranslated(blueBall.pos.x, blueBall.pos.y + thickness + 0.1, blueBall.pos.z);
+    glutSolidSphere(0.1, 30, 60);
+    glPopMatrix();
+}
+
+void drawSlots() {
+    // Red Slot
+    glPushMatrix();
+    glTranslated(redSlot.pos.x, redSlot.pos.y + thickness + 0.1, redSlot.pos.z);
+
+    glColor3f(0.6, 0.6, 0.6);
+    glPushMatrix();
+    glTranslated(0, -0.05, 0);
+    glScaled(1.5, 1, 1.5);
+    glutSolidCube(0.05);
+    glPopMatrix();
+
+    glColor3f(0.8, 0.2, 0.2);
+    glPushMatrix();
+    glTranslated(0, 0.1, 0);
+    if (redSlot.isBallPlaced) {
+        glutSolidSphere(0.1, 30, 60);
+    }
+    else {
+        glutWireSphere(0.1, 30, 10);
+    }
+    glPopMatrix();
+
+    glPopMatrix();
+
+    // Green Slot
+    glColor3f(0.2, 0.8, 0.2);
+    glPushMatrix();
+    glTranslated(greenSlot.pos.x, greenSlot.pos.y + thickness + 0.1, greenSlot.pos.z);
+
+    glColor3f(0.6, 0.6, 0.6);
+    glPushMatrix();
+    glTranslated(0, -0.05, 0);
+    glScaled(1.5, 1, 1.5);
+    glutSolidCube(0.05);
+    glPopMatrix();
+
+    glColor3f(0.2, 0.8, 0.2);
+    glPushMatrix();
+    glTranslated(0, 0.1, 0);
+    if (greenSlot.isBallPlaced) {
+        glutSolidSphere(0.1, 30, 60);
+    }
+    else {
+        glutWireSphere(0.1, 30, 10);
+    }
+    glPopMatrix();
+
+    glPopMatrix();
+
+    // Blue Slot
+    glColor3f(0.2, 0.2, 0.8);
+    glPushMatrix();
+    glTranslated(blueSlot.pos.x, blueSlot.pos.y + thickness + 0.1, blueSlot.pos.z);
+    
+    glColor3f(0.6, 0.6, 0.6);
+    glPushMatrix();
+    glTranslated(0, -0.05, 0);
+    glScaled(1.5, 1, 1.5);
+    glutSolidCube(0.05);
+    glPopMatrix();
+
+    glColor3f(0.2, 0.2, 0.8);
+    glPushMatrix();
+    glTranslated(0, 0.1, 0);
+    if (blueSlot.isBallPlaced) {
+        glutSolidSphere(0.1, 30, 60);
+    }
+    else {
+        glutWireSphere(0.1, 30, 10);
+    }
+    glPopMatrix();
+
+    glPopMatrix();
+}
+
+void drawLevelDoor() {
+    glColor3f(0.25, 0.1, 0.35);
+
+    glPushMatrix();
+    glTranslated(0, thickness, -2);
+    glScaled(10, 40, 1);
+    glutSolidCube(thickness);
+    glPopMatrix();
+}
+
+bool isLevelDoorClosed() {
+    return !redSlot.isBallPlaced || !greenSlot.isBallPlaced || !blueSlot.isBallPlaced;
+}
+
 void drawGameText() {
     if (level == LEVEL_1) {
         glColor3f(0.0, 0.0, 0.0);
@@ -1135,7 +1286,6 @@ void Display(void) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glLoadIdentity();
-
 
     //camera initialization
     if (firstPerson) {
@@ -1197,14 +1347,21 @@ void Display(void) {
     bottomRoom.render();
     leftRoom.render();
 
+    glDisable(GL_LIGHTING);	// Disable lighting
+    glPushMatrix();
+
     drawSpikes();
     // TODO: Change this to level 2 only.
     if (level == LEVEL_1) {
         drawMovingWalls();
     }
 
-    glDisable(GL_LIGHTING);	// Disable lighting
-    glPushMatrix();
+    drawBalls();
+    drawSlots();
+
+    if (isLevelDoorClosed()) {
+        drawLevelDoor();
+    }
 
     // Sky color
     if (level == LEVEL_1) {
