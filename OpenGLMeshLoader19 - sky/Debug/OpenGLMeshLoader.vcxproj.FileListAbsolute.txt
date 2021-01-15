@@ -2,3 +2,5 @@ D:\GUC\Semster 7\DMET 502 graphics\Project\OpenGLMeshLoader19 - sky\Debug\OpenGL
 D:\GUC\Semster 7\DMET 502 graphics\Project\OpenGLMeshLoader19 - sky\Debug\OpenGLMeshLoader19.pdb
 D:\GUC\Semster 7\DMET 502 graphics\Project\BallsCollector\OpenGLMeshLoader19 - sky\Debug\OpenGLMeshLoader19.exe
 D:\GUC\Semster 7\DMET 502 graphics\Project\BallsCollector\OpenGLMeshLoader19 - sky\Debug\OpenGLMeshLoader19.pdb
+C:\Users\Hussein\Desktop\Graphics-Project\OpenGLMeshLoader19 - sky\Debug\OpenGLMeshLoader19.exe
+C:\Users\Hussein\Desktop\Graphics-Project\OpenGLMeshLoader19 - sky\Debug\OpenGLMeshLoader19.pdb

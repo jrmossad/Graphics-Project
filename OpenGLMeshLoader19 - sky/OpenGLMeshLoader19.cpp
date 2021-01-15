@@ -11,6 +11,9 @@
 #include <glut.h>
 #include <stdlib.h>
 #include <iostream>
+#include <windows.h>
+#include <mmsystem.h>
+using namespace std;
 
 //=======================DEFINITIONS======================================
 #define DEGTORAD(x) x*3.1415/180.0
@@ -28,7 +31,7 @@ class Room;
 void drawUnitCube();
 bool insideRectangle(Vector bottomLeft, Vector topRight, Vector p);
 bool validMove(Vector map[], int n, Vector p);
-void print(float x, float y, float z, char* string);
+void print(float x, float y, char* string);
 void init();
 void Display(void);
 void mouseMovement(int x, int y);
@@ -37,6 +40,9 @@ void key(unsigned char k, int x, int y);
 void Idle();
 void loadAssets();
 void drawTexturedFace(int type, GLTexture _tex, int rep);
+void playMusic(int musicConstant);
+void playSound(int soundConstant);
+void drawGameText();
 //===============================CLASSES=================================
 class Vector
 {
@@ -93,6 +99,15 @@ public:
         x -= vec.x;
         y -= vec.y;
         z -= vec.z;
+
+        return *this;
+    }
+
+    Vector& operator = (Vector vec)
+    {
+        x = vec.x;
+        y = vec.y;
+        z = vec.z;
 
         return *this;
     }
@@ -392,16 +407,16 @@ Model_3DS skull;
 Vector eye(0.0, 0.5, 0.0);
 Vector ref(1.0, 0.5, 0.0);
 Vector up(0.0, 1.0, 0.0);
+bool firstPerson = true;
+Vector playerPos(0.0, 0.5, 0.0);
 Vector cameraRotation(0.0, 0.0, 0.0);
+float camDistance = 0.4;
 
 //movement speed
 float speed = 0.3;
 
 //screen
-int width = 1000;
-int height = 1000;
-float windowHeight = glutGet(GLUT_SCREEN_HEIGHT);
-float windowWidth = glutGet(GLUT_SCREEN_WIDTH);
+int screenW, screenH;
 
 //mouse position
 float mouseX, mouseY;
@@ -410,6 +425,12 @@ float mouseX, mouseY;
 float thickness = 0.05;
 float halfThickness = 0.025;
 
+//the coordinates used for collision when the player collects all the balls
+Vector winningRoom[] = {
+    //winning room
+    Vector(-0.25 + thickness, halfThickness , -2 + thickness), //bottom-left
+    Vector(0.25 - thickness , halfThickness , -3), //top-right
+};
 //clock-wise array of bottom-left, top-right coordinates of rooms
 Vector mapRectangles[] = {
     //main room
@@ -453,10 +474,25 @@ Room bottomRoom(5 - 2 * thickness, 0, 7.5 - 2 * thickness, 6, thickness, 3, 2, e
 Room leftHallWay(-3 + thickness, 0, 0, 2, thickness, 0.5, 1, eighth);
 Room leftRoom(-5 + 2 * thickness, 0, 0, 2, thickness, 4, 2, eighth);
 
-//Screen font
-GLvoid* font_style = GLUT_BITMAP_TIMES_ROMAN_24;
-
 //===============================HELPER-Functions==================================
+
+//draws the player
+void drawPlayer(float x, float y, float z) {
+    glPushMatrix();
+
+    //TODO: replace the 0.2 with half the player's height
+    glTranslated(x, thickness + 0.2, z);
+
+    //TODO: adjust the scaling factors
+    // until you get a reasonable size for the player
+    glScaled(0.2, 0.4, 0.2);
+    //TODO: load model instead of cube
+    //RenderSanta(); if level1
+    //RenderPlayer2(); if level2
+    glRotated(-cameraRotation.x, 0, 1, 0);
+    drawUnitCube();
+    glPopMatrix();
+}
 
 //draws 1x1x1 cube
 void drawUnitCube() {
@@ -596,25 +632,41 @@ bool validMove(Vector map[], int n, Vector p)
         valid |= insideRectangle(map[i], map[i + 1], p);
     }
 
+    //    TODO: when player collects all the balls
+    //    this will allow the player to walk into the winning door
+    //    if(/*win*/){
+    //        valid |=  insideRectangle(winningRoom[0], winningRoom[1], p);
+    //    }
+
     return valid;
 }
 
 //print text
-void print(float x, float y, float z, char* string)
+void print(float x, float y, char* string)
 {
     int len, i;
 
-    //set the position of the text in the window using the x and y coordinates
-    //glWindowPos3f(x, y, z);
+    glRasterPos2f(x, y);
 
-    //get the length of the string to display
     len = (int)strlen(string);
 
-    //loop to display character by character
-    for (i = 0; i < len; i++)
-    {
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+    gluOrtho2D(0.0, screenW, 0.0, screenH);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+    glRasterPos2i(x, y);
+    for (int i = 0; i < len; ++i) {
         glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, string[i]);
     }
+    glPopMatrix();
+
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
 }
 
 void second(int val)
@@ -658,6 +710,10 @@ void init() {
 
     //start score timer
     second(0);
+
+    // Play background music.
+    // TODO: Check level.
+    playMusic(0);
 }
 
 void RenderPumpkin(double x = 0.0, double z = 0.0) {
@@ -735,7 +791,7 @@ void RenderSkull(double x = 0.0, double z = 0.0) {
 
 void RenderGround()
 {
-    glDisable(GL_LIGHTING);	// Disable lighting 
+    glDisable(GL_LIGHTING);	// Disable lighting
 
     glColor3f(0.6, 0.6, 0.6);	// Dim the ground texture a bit
 
@@ -762,6 +818,19 @@ void RenderGround()
     glColor3f(1, 1, 1);	// Set material back to white instead of grey used for the ground texture.
 }
 
+void drawGameText() {
+    //draw score
+    glColor3f(1.0, 1.0, 1.0);
+    char* p0s[20];
+    sprintf((char*)p0s, "Score: %d", score);
+    print(10, screenH - 30, (char*)p0s);
+
+    //draw time bonus
+    char* p1s[20];
+    sprintf((char*)p1s, "Time bonus: %d", timeBonus);
+    print(10, screenH - 60, (char*)p1s);
+}
+
 //===============================DISPLAY=================================
 
 void Display(void) {
@@ -769,34 +838,55 @@ void Display(void) {
 
     glLoadIdentity();
 
-    glRotated(cameraRotation.y, 1, 0, 0);
-    glRotated(cameraRotation.x, 0, 1, 0);
 
-    gluLookAt(eye.x,
-        eye.y,
-        eye.z,
-        eye.x + 1,
-        eye.y,
-        eye.z,
-        up.x,
-        up.y,
-        up.z);
+    //camera initialization
+    if (firstPerson) {
+        glRotated(cameraRotation.y, 1, 0, 0);
+        glRotated(cameraRotation.x, 0, 1, 0);
+
+        gluLookAt(eye.x,
+            eye.y,
+            eye.z,
+            eye.x + 1,
+            eye.y,
+            eye.z,
+            up.x,
+            up.y,
+            up.z);
+    }
+    else {
+
+        gluLookAt(eye.x - cos(DEGTORAD(cameraRotation.x)) * camDistance,
+            eye.y - sin(DEGTORAD(cameraRotation.y)) * 0.3,
+            eye.z - sin(DEGTORAD(cameraRotation.x)) * camDistance,
+            playerPos.x,
+            playerPos.y,
+            playerPos.z,
+            up.x,
+            up.y,
+            up.z);
+
+        //TODO: render the player here
+        glColor3f(1, 1, 1);
+        drawPlayer(playerPos.x, playerPos.y, playerPos.z);
+    }
+
     glColor3f(1, 1, 1);
-    RenderPlayer2(-1.0, 0.5);
+    //    RenderPlayer2(-1.0, 0.5);
     RenderSkull(0.5, 0.5);
-    RenderSanta(0.5, -0.5);
-    //RenderPresent(0.2,-0.2);
-    //RenderPresent(-0.2, -0.2);
-    //RenderPresent(-0.2, 0.2);
+    //    RenderSanta(0.5, -0.5);
+    //    RenderPresent(0.2,-0.2);
+    //    RenderPresent(-0.2, -0.2);
+    //    RenderPresent(-0.2, 0.2);
 
-    //RenderTree();
+    //    RenderTree();
 
     RenderPumpkin(0.2, -0.2);
     RenderPumpkin(-0.2, -0.2);
     RenderPumpkin(-0.2, 0.2);
 
 
-    RenderSkeleton(-0.5,0.5);
+    RenderSkeleton(-0.5, 0.5);
 
     RenderGround();
 
@@ -809,17 +899,11 @@ void Display(void) {
     bottomRoom.render();
     leftRoom.render();
 
-    glColor3f(0.118, 0.565, 1);
-    char* p0s[20];
-    sprintf((char*)p0s, "Score: %d", score);
-    print(10, 860, 0, (char*)p0s);
+    drawGameText();
 
-    char* p1s[20];
-    sprintf((char*)p1s, "Time bonus: %d", timeBonus);
-    print(10, 835, 0, (char*)p1s);
-
-    glDisable(GL_LIGHTING);	// Disable lighting 
+    glDisable(GL_LIGHTING);	// Disable lighting
     glPushMatrix();
+    glColor3f(0.118, 0.565, 1);
 
     GLUquadricObj* qobj;
     qobj = gluNewQuadric();
@@ -846,14 +930,27 @@ void mouseMovement(int x, int y)
 
     mouseX = x;
     mouseY = y;
-    if (mouseX <= 0 || mouseX >= width - 1)
-        glutWarpPointer(width / 2, y);
 
-    if (mouseY <= 0 || mouseY >= height - 1)
-        glutWarpPointer(x, height / 2);
+    //if camera runs out of space
+    if (mouseX <= 0 || mouseX >= screenW - 1)
+        glutWarpPointer(screenW / 2, y);
+
+    if (mouseY <= 0 || mouseY >= screenH - 1)
+        glutWarpPointer(x, screenH / 2);
 
     cameraRotation.x += diffX;
-    cameraRotation.y += diffY;
+
+    //if camera rotates more than 90 degrees up or down
+    if (cameraRotation.y + diffY >= 90) {
+        cameraRotation.y = 90;
+    }
+    else if (cameraRotation.y + diffY <= -90) {
+        cameraRotation.y = -90;
+    }
+    else {
+        cameraRotation.y += diffY;
+    }
+
 
     glutPostRedisplay();
 }
@@ -862,32 +959,39 @@ void mouseMovement(int x, int y)
 
 void SpecialInput(int key, int x, int y)
 {
-    Vector after(eye.x, halfThickness, eye.z);
-
+    Vector after(playerPos.x, playerPos.y, playerPos.z);
+    Vector Movement(0.0, 0.0, 0.0);
     switch (key)
     {
     case GLUT_KEY_UP:
-        after.x += cos(DEGTORAD(cameraRotation.x)) * speed;
-        after.z += sin(DEGTORAD(cameraRotation.x)) * speed;
+        Movement.x += cos(DEGTORAD(cameraRotation.x)) * speed;
+        Movement.z += sin(DEGTORAD(cameraRotation.x)) * speed;
         break;
     case GLUT_KEY_DOWN:
-        after.x -= cos(DEGTORAD(cameraRotation.x)) * speed;
-        after.z -= sin(DEGTORAD(cameraRotation.x)) * speed;
+        Movement.x -= cos(DEGTORAD(cameraRotation.x)) * speed;
+        Movement.z -= sin(DEGTORAD(cameraRotation.x)) * speed;
         break;
     case GLUT_KEY_LEFT:
-        after.x += sin(DEGTORAD(cameraRotation.x)) * speed;
-        after.z -= cos(DEGTORAD(cameraRotation.x)) * speed;
+        Movement.x += sin(DEGTORAD(cameraRotation.x)) * speed;
+        Movement.z -= cos(DEGTORAD(cameraRotation.x)) * speed;
         break;
     case GLUT_KEY_RIGHT:
-        after.x -= sin(DEGTORAD(cameraRotation.x)) * speed;
-        after.z += cos(DEGTORAD(cameraRotation.x)) * speed;
+        Movement.x -= sin(DEGTORAD(cameraRotation.x)) * speed;
+        Movement.z += cos(DEGTORAD(cameraRotation.x)) * speed;
         break;
     }
 
+    after += Movement;
     int n = sizeof(mapRectangles) / sizeof(mapRectangles[0]);
     if (validMove(mapRectangles, n, after)) {
-        eye.x = after.x;
-        eye.z = after.z;
+        playerPos = after;
+        eye += Movement;
+        playSound(0);
+    }
+    else {
+        //collision logic
+        score = max(0, score - 2);
+        playSound(1);
     }
 
     glutPostRedisplay();
@@ -897,16 +1001,78 @@ void key(unsigned char k, int x, int y)
 {
     if (k == GLUT_KEY_ESCAPE)
         exit(EXIT_SUCCESS);
-    //up down for debugging
-    if (k == 'z' || k == 'Z') {
-        eye.y += speed;
+
+    //distance between camera, player
+    if (!firstPerson) {
+        if (k == 'z' || k == 'Z') {
+            camDistance = max(0.3, camDistance - 0.1);
+
+        }
+
+        if (k == 'x' || k == 'X') {
+            camDistance = min(0.8, camDistance + 0.1);
+        }
     }
 
-    if (k == 'x' || k == 'X') {
-        eye.y -= speed;
+    //toggle first person
+    if (k == 'c' || k == 'C') {
+        if (!firstPerson) {
+            eye = playerPos;
+            cameraRotation.y = 0;
+        }
+
+        firstPerson = !firstPerson;
     }
 
     glutPostRedisplay();
+}
+
+//===============================MUSIC=================================
+
+void playMusic(int musicConstant) {
+    switch (musicConstant) {
+    case 0:
+        mciSendString("open \"assets/music/music_1.mp3\" type mpegvideo alias mp3", NULL, 0, NULL);
+        break;
+    case 1:
+        mciSendString("open \"assets/music/music_2.mp3\" type mpegvideo alias mp3", NULL, 0, NULL);
+        break;
+    }
+    mciSendString("play mp3 repeat", NULL, 0, NULL);
+}
+
+//===============================SOUND FX=================================
+
+void playSound(int soundConstant) {
+    switch (soundConstant) {
+    case 0:
+        PlaySound("assets/sfx/footstep.wav", NULL, SND_FILENAME | SND_ASYNC);
+        break;
+    case 1:
+        PlaySound("assets/sfx/collision.wav", NULL, SND_FILENAME | SND_ASYNC);
+        break;
+    case 2:
+        PlaySound("assets/sfx/hurt.wav", NULL, SND_FILENAME | SND_ASYNC);
+        break;
+    case 3:
+        PlaySound("assets/sfx/lift_up.wav", NULL, SND_FILENAME | SND_ASYNC);
+        break;
+    case 4:
+        PlaySound("assets/sfx/drop.wav", NULL, SND_FILENAME | SND_ASYNC);
+        break;
+    case 5:
+        PlaySound("assets/sfx/door_open.wav", NULL, SND_FILENAME | SND_ASYNC);
+        break;
+    case 6:
+        PlaySound("assets/sfx/teleport.wav", NULL, SND_FILENAME | SND_ASYNC);
+        break;
+    case 7:
+        PlaySound("assets/sfx/game_won.wav", NULL, SND_FILENAME | SND_ASYNC);
+        break;
+    case 8:
+        PlaySound("assets/sfx/game_lost.wav", NULL, SND_FILENAME | SND_ASYNC);
+        break;
+    }
 }
 
 //===============================IDLE/ANIM=================================
@@ -941,6 +1107,8 @@ void loadAssets() {
 
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
+    screenW = glutGet(GLUT_SCREEN_WIDTH);
+    screenH = glutGet(GLUT_SCREEN_HEIGHT);
 
     glutCreateWindow("to be named");
 
@@ -961,7 +1129,7 @@ int main(int argc, char** argv) {
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(95.0f, width / height, 0.1f, 500.0f);
+    gluPerspective(95.0f, screenW / screenH, 0.1f, 500.0f);
 
     //camera
     glMatrixMode(GL_MODELVIEW);
@@ -987,4 +1155,3 @@ int main(int argc, char** argv) {
 
     glutMainLoop();
 }
-

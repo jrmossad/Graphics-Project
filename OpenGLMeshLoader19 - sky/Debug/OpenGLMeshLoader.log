@@ -1,7 +1,8 @@
 ﻿  OpenGLMeshLoader19.cpp
-D:\GUC\Semster 7\DMET 502 graphics\Project\BallsCollector\OpenGLMeshLoader19 - sky\TextureBuilder.h(27,52): warning C4244: 'argument': conversion from 'int' to 'GLfloat', possible loss of data
-D:\GUC\Semster 7\DMET 502 graphics\Project\BallsCollector\OpenGLMeshLoader19 - sky\TextureBuilder.h(28,52): warning C4244: 'argument': conversion from 'int' to 'GLfloat', possible loss of data
-D:\GUC\Semster 7\DMET 502 graphics\Project\BallsCollector\OpenGLMeshLoader19 - sky\OpenGLMeshLoader19.cpp(814,5): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-D:\GUC\Semster 7\DMET 502 graphics\Project\BallsCollector\OpenGLMeshLoader19 - sky\OpenGLMeshLoader19.cpp(818,5): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Hussein\Desktop\Graphics-Project\OpenGLMeshLoader19 - sky\TextureBuilder.h(27,52): warning C4244: 'argument': conversion from 'int' to 'GLfloat', possible loss of data
+C:\Users\Hussein\Desktop\Graphics-Project\OpenGLMeshLoader19 - sky\TextureBuilder.h(28,52): warning C4244: 'argument': conversion from 'int' to 'GLfloat', possible loss of data
+C:\Users\Hussein\Desktop\Graphics-Project\OpenGLMeshLoader19 - sky\OpenGLMeshLoader19.cpp(647,14): warning C4101: 'i': unreferenced local variable
+C:\Users\Hussein\Desktop\Graphics-Project\OpenGLMeshLoader19 - sky\OpenGLMeshLoader19.cpp(825,5): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+C:\Users\Hussein\Desktop\Graphics-Project\OpenGLMeshLoader19 - sky\OpenGLMeshLoader19.cpp(830,5): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
 GLTexture.obj : warning LNK4075: ignoring '/EDITANDCONTINUE' due to '/INCREMENTAL:NO' specification
-  OpenGLMeshLoader.vcxproj -> D:\GUC\Semster 7\DMET 502 graphics\Project\BallsCollector\OpenGLMeshLoader19 - sky\Debug\OpenGLMeshLoader19.exe
+  OpenGLMeshLoader.vcxproj -> C:\Users\Hussein\Desktop\Graphics-Project\OpenGLMeshLoader19 - sky\Debug\OpenGLMeshLoader19.exe
