@@ -51,10 +51,12 @@ void drawTexturedFace(int type, GLTexture _tex, int rep);
 void playMusic(int musicConstant);
 void playSound(int soundConstant);
 bool hasSteppedOnSpike();
+bool hasCollidedWithMovingWall(Vector after);
 void drawGameText();
 void RenderSanta(double x, double z);
 void RenderPlayer2(double x, double z);
 void drawSpikes();
+void drawMovingWalls();
 
 //===============================CLASSES=================================
 class Vector
@@ -496,7 +498,7 @@ Vector cameraRotation(0.0, 0.0, 0.0);
 float camDistance = 0.4;
 
 //movement speed
-float speed = 0.3;
+float speed = 0.2;
 
 //screen
 int screenW, screenH;
@@ -633,6 +635,23 @@ Vector spikes[] = {
     Vector(-4.5, 0.0, 0.5),
     Vector(-4.5, 0.0, 1.0)
 };
+
+Vector movingWalls[] = {
+    // Corner Hallway
+    Vector(4.9, 0.0, 5.9),
+    Vector(4.9, 0.0, 2.0),
+
+    // Top Hallway
+    Vector(3.9, 0.0, 0.0),
+    Vector(2.0, 0.0, 0.0),
+
+    // Bottom Hallway
+    Vector(-2.0, 0.0, 0.0),
+    Vector(-3.9, 0.0, 0.0)
+};
+
+double wallsTranslation = 0.0;
+bool areWallsMovingUp = false;
 
 //score
 int score = 0;
@@ -1010,7 +1029,7 @@ void drawSpikes() {
     for (int i = 0; i < spikesCount; i++) {
         glPushMatrix();
 
-        glTranslated(spikes[i].x, 0, spikes[i].z);
+        glTranslated(spikes[i].x, thickness + spikes[i].y, spikes[i].z);
         glRotated(-90, 1, 0, 0);
         glutSolidCone(0.1, 0.2, 30, 60);
 
@@ -1025,6 +1044,61 @@ bool hasSteppedOnSpike() {
         if (spikes[i].x - 0.1 <= playerPos.x && playerPos.x <= spikes[i].x + 0.1
             && spikes[i].z - 0.1 <= playerPos.z && playerPos.z <= spikes[i].z + 0.1) {
             return true;
+        }
+    }
+
+    return false;
+}
+
+void drawMovingWalls() {
+    int movingWallsCount = sizeof(movingWalls) / sizeof(movingWalls[0]);
+
+    glColor3f(0.2, 0.1, 0.5);
+
+    for (int i = 0; i < movingWallsCount; i++) {
+        glPushMatrix();
+
+        glTranslated(movingWalls[i].x, thickness + movingWalls[i].y + wallsTranslation, movingWalls[i].z);
+        if (i <= 1) {
+            // Corner Room
+            glScaled(10, 40, 1);
+        }
+        else {
+            // Other Rooms
+            glScaled(1, 40, 10);
+        }
+        glutSolidCube(thickness);
+
+        glPopMatrix();
+    }
+}
+
+bool hasCollidedWithMovingWall(Vector after) {
+    // TODO: Change this to level 1.
+    if (level == LEVEL_2) return false;
+
+    if (wallsTranslation <= -1.0) return false;
+
+    int movingWallsCount = sizeof(movingWalls) / sizeof(movingWalls[0]);
+
+    for (int i = 0; i < movingWallsCount; i++) {
+        if (i <= 1) {
+            // Corner Room
+            if (playerPos.z <= movingWalls[i].z && movingWalls[i].z <= after.z) {
+                return true;
+            }
+            if (playerPos.z >= movingWalls[i].z && movingWalls[i].z >= after.z) {
+                return true;
+            }
+        }
+        else {
+            // Other Rooms
+            if (playerPos.x <= movingWalls[i].x && movingWalls[i].x <= after.x) {
+                return true;
+            }
+            if (playerPos.x >= movingWalls[i].x && movingWalls[i].x >= after.x) {
+                return true;
+            }
         }
     }
 
@@ -1079,7 +1153,6 @@ void Display(void) {
             up.z);
     }
     else {
-
         gluLookAt(eye.x - cos(DEGTORAD(cameraRotation.x)) * camDistance,
             eye.y - sin(DEGTORAD(cameraRotation.y)) * 0.3,
             eye.z - sin(DEGTORAD(cameraRotation.x)) * camDistance,
@@ -1124,8 +1197,11 @@ void Display(void) {
     bottomRoom.render();
     leftRoom.render();
 
-    // TODO: Draw obstacles.
     drawSpikes();
+    // TODO: Change this to level 2 only.
+    if (level == LEVEL_1) {
+        drawMovingWalls();
+    }
 
     glDisable(GL_LIGHTING);	// Disable lighting
     glPushMatrix();
@@ -1217,7 +1293,7 @@ void SpecialInput(int key, int x, int y)
 
     after += Movement;
     int n = sizeof(mapRectangles) / sizeof(mapRectangles[0]);
-    if (validMove(mapRectangles, n, after)) {
+    if (!hasCollidedWithMovingWall(after) && validMove(mapRectangles, n, after)) {
         playerPos = after;
         eye += Movement;
 
@@ -1320,6 +1396,14 @@ void playSound(int soundConstant) {
 
 void Idle()
 {
+    if (areWallsMovingUp) {
+        wallsTranslation += 0.01;
+        if (wallsTranslation >= 0.0) areWallsMovingUp = false;
+    }
+    else {
+        wallsTranslation -= 0.01;
+        if (wallsTranslation <= -1.2) areWallsMovingUp = true;
+    }
     glutPostRedisplay();
 
 }
