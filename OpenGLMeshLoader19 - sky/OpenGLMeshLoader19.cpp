@@ -19,12 +19,20 @@ using namespace std;
 #define DEGTORAD(x) x*3.1415/180.0
 #define GLUT_KEY_ESCAPE 27
 
+enum Level {
+    LEVEL_1, LEVEL_2
+};
+
 //Textures
 GLTexture level1tex_walls;
 GLTexture level2tex_walls;
+GLTexture level1tex_ground;
 GLTexture level2tex_ground;
 GLTexture tex_ground;
 GLuint tex;
+
+// Level
+Level level = LEVEL_1;
 
 class Vector;
 class Room;
@@ -43,6 +51,9 @@ void drawTexturedFace(int type, GLTexture _tex, int rep);
 void playMusic(int musicConstant);
 void playSound(int soundConstant);
 void drawGameText();
+void RenderSanta(double x, double z);
+void RenderPlayer2(double x, double z);
+
 //===============================CLASSES=================================
 class Vector
 {
@@ -157,7 +168,6 @@ public:
         doorPortions[1] = _doorPortions[1];
         doorPortions[2] = _doorPortions[2];
         doorPortions[3] = _doorPortions[3];
-
     }
 
     void assignWall(int direction, int type) {
@@ -184,8 +194,12 @@ public:
             glPushMatrix();
             glTranslated(x, y + wallHeight / 2.0 + (sy / 2.0), z - (sz / 2.0) + (sy / 2.0));
             glScaled(sx, wallHeight, sy);
-            //drawTexturedFace(2, level1tex_walls, 1);
-            drawTexturedFace(2, level2tex_walls, 4);
+            if (level == LEVEL_1) {
+                drawTexturedFace(2, level1tex_walls, 1);
+            }
+            else {
+                drawTexturedFace(2, level2tex_walls, 1);
+            }
             drawUnitCube();
             glPopMatrix();
         }
@@ -197,8 +211,12 @@ public:
                 y + wallHeight / 4.0 + (sy / 2.0),
                 z - (sz / 2.0) + (sy / 2.0));
             glScaled((sx / 2.0) - (sx * (doorPortions[0] / 2.0)), 1, sy);
-            //drawTexturedFace(2, level1tex_walls, 1);
-            drawTexturedFace(2, level2tex_walls, 1);
+            if (level == LEVEL_1) {
+                drawTexturedFace(2, level1tex_walls, 1);
+            }
+            else {
+                drawTexturedFace(2, level2tex_walls, 1);
+            }
             drawUnitCube();
             glPopMatrix();
 
@@ -208,8 +226,12 @@ public:
                 y + wallHeight / 4.0 + (sy / 2.0),
                 z - (sz / 2.0) + (sy / 2.0));
             glScaled((sx / 2.0) - (sx * (doorPortions[0] / 2.0)), wallHeight / 2.0, sy);
-            //drawTexturedFace(2, level1tex_walls, 1);
-            drawTexturedFace(2, level2tex_walls, 1);
+            if (level == LEVEL_1) {
+                drawTexturedFace(2, level1tex_walls, 1);
+            }
+            else {
+                drawTexturedFace(2, level2tex_walls, 1);
+            }
             drawUnitCube();
             glPopMatrix();
 
@@ -219,8 +241,12 @@ public:
                 y + wallHeight / 2.0 + wallHeight / 4.0 + (sy / 2.0),
                 z - (sz / 2.0) + (sy / 2.0));
             glScaled(sx, wallHeight / 2.0, sy);
-            //drawTexturedFace(2, level1tex_walls, 1);
-            drawTexturedFace(2, level2tex_walls, 1);
+            if (level == LEVEL_1) {
+                drawTexturedFace(2, level1tex_walls, 1);
+            }
+            else {
+                drawTexturedFace(2, level2tex_walls, 1);
+            }
             drawUnitCube();
             glPopMatrix();
         }
@@ -234,8 +260,12 @@ public:
             glPushMatrix();
             glTranslated(x, y + wallHeight / 2.0 + (sy / 2.0), z + (sz / 2.0) - (sy / 2.0));
             glScaled(sx, wallHeight, sy);
-            //drawTexturedFace(3, level1tex_walls, 1);
-            drawTexturedFace(3, level2tex_walls, 1);
+            if (level == LEVEL_1) {
+                drawTexturedFace(3, level1tex_walls, 1);
+            }
+            else {
+                drawTexturedFace(3, level2tex_walls, 1);
+            }
             drawUnitCube();
             glPopMatrix();
         }
@@ -247,8 +277,12 @@ public:
                 y + wallHeight / 4.0 + (sy / 2.0),
                 z + (sz / 2.0) - (sy / 2.0));
             glScaled((sx / 2.0) - (sx * (doorPortions[2] / 2.0)), wallHeight / 2.0, sy);
-            //drawTexturedFace(3, level1tex_walls, 1);
-            drawTexturedFace(3, level2tex_walls, 1);
+            if (level == LEVEL_1) {
+                drawTexturedFace(3, level1tex_walls, 1);
+            }
+            else {
+                drawTexturedFace(3, level2tex_walls, 1);
+            }
             drawUnitCube();
             glPopMatrix();
 
@@ -258,7 +292,12 @@ public:
                 y + wallHeight / 4.0 + (sy / 2.0),
                 z + (sz / 2.0) - (sy / 2.0));
             glScaled((sx / 2.0) - (sx * (doorPortions[2] / 2.0)), wallHeight / 2.0, sy);
-            //drawTexturedFace(3, level1tex_walls, 1);
+            if (level == LEVEL_1) {
+                drawTexturedFace(3, level1tex_walls, 1);
+            }
+            else {
+                drawTexturedFace(3, level2tex_walls, 1);
+            }
             drawTexturedFace(3, level2tex_walls, 1);
             drawUnitCube();
             glPopMatrix();
@@ -269,8 +308,12 @@ public:
                 y + wallHeight / 2.0 + wallHeight / 4.0 + (sy / 2.0),
                 z + (sz / 2.0) - (sy / 2.0));
             glScaled(sx, wallHeight / 2.0, sy);
-            //drawTexturedFace(3, level1tex_walls, 1);
-            drawTexturedFace(3, level2tex_walls, 1);
+            if (level == LEVEL_1) {
+                drawTexturedFace(3, level1tex_walls, 1);
+            }
+            else {
+                drawTexturedFace(3, level2tex_walls, 1);
+            }
             drawUnitCube();
             glPopMatrix();
         }
@@ -282,8 +325,12 @@ public:
             glPushMatrix();
             glTranslated(x - (sx / 2.0) + (sy / 2.0), y + wallHeight / 2.0 + (sy / 2.0), z);
             glScaled(sy, wallHeight, sz);
-            //drawTexturedFace(5, level1tex_walls, 1);
-            drawTexturedFace(5, level2tex_walls, 1);
+            if (level == LEVEL_1) {
+                drawTexturedFace(5, level1tex_walls, 1);
+            }
+            else {
+                drawTexturedFace(5, level2tex_walls, 1);
+            }
             drawUnitCube();
             glPopMatrix();
         }
@@ -295,8 +342,12 @@ public:
                 y + wallHeight / 4.0 + (sy / 2.0),
                 z - sz / 2.0 + ((sz / 2.0) - (sz * (doorPortions[3] / 2.0))) / 2.0);
             glScaled(sy, wallHeight / 2.0, (sz / 2.0) - (sz * (doorPortions[3] / 2.0)));
-            //drawTexturedFace(5, level1tex_walls, 1);
-            drawTexturedFace(5, level2tex_walls, 1);
+            if (level == LEVEL_1) {
+                drawTexturedFace(5, level1tex_walls, 1);
+            }
+            else {
+                drawTexturedFace(5, level2tex_walls, 1);
+            }
             drawUnitCube();
             glPopMatrix();
 
@@ -306,8 +357,12 @@ public:
                 y + wallHeight / 4.0 + (sy / 2.0),
                 z + sz / 2.0 - ((sz / 2.0) - (sz * (doorPortions[3] / 2.0))) / 2.0);
             glScaled(sy, wallHeight / 2.0, (sz / 2.0) - (sz * (doorPortions[3] / 2.0)));
-            //drawTexturedFace(5, level1tex_walls, 1);
-            drawTexturedFace(5, level2tex_walls, 1);
+            if (level == LEVEL_1) {
+                drawTexturedFace(5, level1tex_walls, 1);
+            }
+            else {
+                drawTexturedFace(5, level2tex_walls, 1);
+            }
             drawUnitCube();
             glPopMatrix();
 
@@ -317,8 +372,12 @@ public:
                 y + wallHeight / 2.0 + wallHeight / 4.0 + (sy / 2.0),
                 z);
             glScaled(sy, wallHeight / 2.0, sz);
-            //drawTexturedFace(5, level1tex_walls, 1);
-            drawTexturedFace(5, level2tex_walls, 1);
+            if (level == LEVEL_1) {
+                drawTexturedFace(5, level1tex_walls, 1);
+            }
+            else {
+                drawTexturedFace(5, level2tex_walls, 1);
+            }
             drawUnitCube();
             glPopMatrix();
         }
@@ -329,8 +388,12 @@ public:
             glPushMatrix();
             glTranslated(x + (sx / 2.0) - (sy / 2.0), y + wallHeight / 2.0 + (sy / 2.0), z);
             glScaled(sy, wallHeight, sz);
-            //drawTexturedFace(4, level1tex_walls, 1);
-            drawTexturedFace(4, level2tex_walls, 1);
+            if (level == LEVEL_1) {
+                drawTexturedFace(4, level1tex_walls, 1);
+            }
+            else {
+                drawTexturedFace(4, level2tex_walls, 1);
+            }
             drawUnitCube();
             glPopMatrix();
         }
@@ -342,8 +405,12 @@ public:
                 y + wallHeight / 4.0 + (sy / 2.0),
                 z - sz / 2.0 + ((sz / 2.0) - (sz * (doorPortions[1] / 2.0))) / 2.0);
             glScaled(sy, wallHeight / 2.0, (sz / 2.0) - (sz * (doorPortions[1] / 2.0)));
-            //drawTexturedFace(4, level1tex_walls, 1);
-            drawTexturedFace(4, level2tex_walls, 1);
+            if (level == LEVEL_1) {
+                drawTexturedFace(4, level1tex_walls, 1);
+            }
+            else {
+                drawTexturedFace(4, level2tex_walls, 1);
+            }
             drawUnitCube();
             glPopMatrix();
 
@@ -353,8 +420,12 @@ public:
                 y + wallHeight / 4.0 + (sy / 2.0),
                 z + sz / 2.0 - ((sz / 2.0) - (sz * (doorPortions[1] / 2.0))) / 2.0);
             glScaled(sy, wallHeight / 2.0, (sz / 2.0) - (sz * (doorPortions[1] / 2.0)));
-            //drawTexturedFace(4, level1tex_walls, 1);
-            drawTexturedFace(4, level2tex_walls, 1);
+            if (level == LEVEL_1) {
+                drawTexturedFace(4, level1tex_walls, 1);
+            }
+            else {
+                drawTexturedFace(4, level2tex_walls, 1);
+            }
             drawUnitCube();
             glPopMatrix();
 
@@ -364,8 +435,12 @@ public:
                 y + wallHeight / 2.0 + wallHeight / 4.0 + (sy / 2.0),
                 z);
             glScaled(sy, wallHeight / 2.0, sz);
-            //drawTexturedFace(4, level1tex_walls, 1);
-            drawTexturedFace(4, level2tex_walls, 1);
+            if (level == LEVEL_1) {
+                drawTexturedFace(4, level1tex_walls, 1);
+            }
+            else {
+                drawTexturedFace(4, level2tex_walls, 1);
+            }
             drawUnitCube();
             glPopMatrix();
         }
@@ -379,7 +454,12 @@ public:
         glTranslated(x, y, z);
         glScaled(sx, sy, sz);
         //drawTexturedFace(0, tex_ground, 5);
-        drawTexturedFace(0, level2tex_ground, 2);
+        if (level == LEVEL_1) {
+            drawTexturedFace(0, level1tex_ground, 2);
+        }
+        else {
+            drawTexturedFace(0, level2tex_ground, 2);
+        }
         drawUnitCube();
         glPopMatrix();
 
@@ -393,6 +473,7 @@ public:
     }
 };
 //=============================GLOBAL-VARS===============================
+
 //3D Models
 Model_3DS christmas_tree;
 Model_3DS santa;
@@ -486,11 +567,12 @@ void drawPlayer(float x, float y, float z) {
     //TODO: adjust the scaling factors
     // until you get a reasonable size for the player
     glScaled(0.2, 0.4, 0.2);
-    //TODO: load model instead of cube
-    //RenderSanta(); if level1
-    //RenderPlayer2(); if level2
     glRotated(-cameraRotation.x, 0, 1, 0);
-    drawUnitCube();
+    if (level == LEVEL_1) {
+        RenderSanta(playerPos.x, playerPos.z);
+    } else {
+        RenderPlayer2(playerPos.x, playerPos.z);
+    }
     glPopMatrix();
 }
 
@@ -712,8 +794,12 @@ void init() {
     second(0);
 
     // Play background music.
-    // TODO: Check level.
-    playMusic(0);
+    if (level == LEVEL_1) {
+        playMusic(0);
+    }
+    else {
+        playMusic(1);
+    }
 }
 
 void RenderPumpkin(double x = 0.0, double z = 0.0) {
@@ -872,21 +958,23 @@ void Display(void) {
     }
 
     glColor3f(1, 1, 1);
-    //    RenderPlayer2(-1.0, 0.5);
-    RenderSkull(0.5, 0.5);
-    //    RenderSanta(0.5, -0.5);
-    //    RenderPresent(0.2,-0.2);
-    //    RenderPresent(-0.2, -0.2);
-    //    RenderPresent(-0.2, 0.2);
 
-    //    RenderTree();
+    if (level == LEVEL_1) {
+        RenderPresent(0.2,-0.2);
+        RenderPresent(-0.2, -0.2);
+        RenderPresent(-0.2, 0.2);
 
-    RenderPumpkin(0.2, -0.2);
-    RenderPumpkin(-0.2, -0.2);
-    RenderPumpkin(-0.2, 0.2);
+        RenderTree();
+    }
+    else {
+        RenderSkull(0.5, 0.5);
 
+        RenderPumpkin(0.2, -0.2);
+        RenderPumpkin(-0.2, -0.2);
+        RenderPumpkin(-0.2, 0.2);
 
-    RenderSkeleton(-0.5, 0.5);
+        RenderSkeleton(-0.5, 0.5);
+    }
 
     RenderGround();
 
@@ -1085,22 +1173,23 @@ void Idle()
 
 //===============================ASSETS=================================
 void loadAssets() {
-    santa.Load("Models/Toy Santa/Toy Santa.3ds");
-    christmas_tree.Load("Models/Christmas tree/Christmas tree N221218.3ds");
-    model_house.Load("Models/house/house.3DS");
-    pumpkin.Load("Models/Pumpkin Halloween Yoda/Pumpkin Halloween Yoda.3ds");
-    present.Load("Models/Present/Box christmas present.3ds");
-    player2.Load("Models/Player2/Handmaiden star wars.3DS");
-    skeleton.Load("Models/Skelet/Skelet.3ds");
-    skull.Load("Models/Skull/dino--55k.3ds");
+    santa.Load("assets/models/Toy Santa/Toy Santa.3ds");
+    christmas_tree.Load("assets/models/Christmas tree/Christmas tree N221218.3ds");
+    model_house.Load("assets/models/house/house.3DS");
+    pumpkin.Load("assets/models/Pumpkin Halloween Yoda/Pumpkin Halloween Yoda.3ds");
+    present.Load("assets/models/Present/Box christmas present.3ds");
+    player2.Load("assets/models/Player2/Handmaiden star wars.3DS");
+    skeleton.Load("assets/models/Skelet/Skelet.3ds");
+    skull.Load("assets/models/Skull/dino--55k.3ds");
 
-    level1tex_walls.Load("Textures/christmas-snowmen.bmp");
-    level2tex_ground.Load("Textures/halloween-textures2.bmp");
-    level2tex_walls.Load("Textures/halloween-texture1.bmp");
+    level1tex_ground.Load("assets/textures/Christmas_red.bmp");
+    level1tex_walls.Load("assets/textures/christmas-snowmen.bmp");
+    level2tex_ground.Load("assets/textures/halloween-textures2.bmp");
+    level2tex_walls.Load("assets/textures/halloween-texture1.bmp");
 
-    tex_ground.Load("Textures/ground0.bmp");
+    tex_ground.Load("assets/textures/ground0.bmp");
 
-    loadBMP(&tex, "Textures/blu-sky-3.bmp", true);
+    loadBMP(&tex, "assets/textures/blu-sky-3.bmp", true);
 }
 
 //===============================MAIN=================================
@@ -1110,7 +1199,7 @@ int main(int argc, char** argv) {
     screenW = glutGet(GLUT_SCREEN_WIDTH);
     screenH = glutGet(GLUT_SCREEN_HEIGHT);
 
-    glutCreateWindow("to be named");
+    glutCreateWindow("RGB Collector");
 
     glutDisplayFunc(Display);
     glutIdleFunc(Idle); //constantly running
