@@ -517,7 +517,6 @@ Vector normals[6] = { Vector(0, 1, 0),Vector(0, -1, 0), Vector(1, 0, 0),Vector(1
 //3D Models
 Model_3DS christmas_tree;
 Model_3DS santa;
-Model_3DS model_house;
 Model_3DS pumpkin;
 Model_3DS present;
 Model_3DS player2;
@@ -1809,7 +1808,6 @@ void Idle()
 void loadAssets() {
     santa.Load("assets/models/Toy Santa/Toy Santa.3ds");
     christmas_tree.Load("assets/models/Christmas tree/Christmas tree N221218.3ds");
-    model_house.Load("assets/models/house/house.3DS");
     pumpkin.Load("assets/models/Pumpkin Halloween Yoda/Pumpkin Halloween Yoda.3ds");
     present.Load("assets/models/Present/Box christmas present.3ds");
     player2.Load("assets/models/Player2/Handmaiden star wars.3DS");
