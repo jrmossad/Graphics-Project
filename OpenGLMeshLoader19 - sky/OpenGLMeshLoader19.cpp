@@ -1075,7 +1075,7 @@ void RenderGround()
 void drawSpikes() {
     int spikesCount = sizeof(spikes) / sizeof(spikes[0]);
 
-    glColor3f(0.0, 0.0, 0.0);
+    glColor3f(0.9, 0.6, 0.0);
 
     for (int i = 0; i < spikesCount; i++) {
         glPushMatrix();
