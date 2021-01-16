@@ -512,6 +512,8 @@ public:
 };
 //=============================GLOBAL-VARS===============================
 
+Vector normals[6] = { Vector(0, 1, 0),Vector(0, -1, 0), Vector(1, 0, 0),Vector(1, 0, 0),Vector(1, 0, 0), Vector(-1, 0, 0) };
+
 //3D Models
 Model_3DS christmas_tree;
 Model_3DS santa;
@@ -754,36 +756,42 @@ void drawUnitCube() {
     glBegin(GL_QUADS);                // Begin drawing the color cube with 6 quads
     // Top face (y = 0.5f)
     // Define vertices in counter-clockwise (CCW) order with normal pointing out
+    glNormal3f(normals[0].x, normals[0].y, normals[0].z);
     glVertex3f(0.5f, 0.5f, -0.5f);
     glVertex3f(-0.5f, 0.5f, -0.5f);
     glVertex3f(-0.5f, 0.5f, 0.5f);
     glVertex3f(0.5f, 0.5f, 0.5f);
 
     // Bottom face (y = -0.5f)
+    glNormal3f(normals[1].x, normals[1].y, normals[1].z);
     glVertex3f(0.5f, -0.5f, 0.5f);
     glVertex3f(-0.5f, -0.5f, 0.5f);
     glVertex3f(-0.5f, -0.5f, -0.5f);
     glVertex3f(0.5f, -0.5f, -0.5f);
 
     // Front face  (z = 0.5f)
+    glNormal3f(normals[2].x, normals[2].y, normals[2].z);
     glVertex3f(0.5f, 0.5f, 0.5f);
     glVertex3f(-0.5f, 0.5f, 0.5f);
     glVertex3f(-0.5f, -0.5f, 0.5f);
     glVertex3f(0.5f, -0.5f, 0.5f);
 
     // Back face (z = -0.5f)
+    glNormal3f(normals[3].x, normals[3].y, normals[3].z);
     glVertex3f(0.5f, -0.5f, -0.5f);
     glVertex3f(-0.5f, -0.5f, -0.5f);
     glVertex3f(-0.5f, 0.5f, -0.5f);
     glVertex3f(0.5f, 0.5f, -0.5f);
 
     // Left face (x = -0.5f)
+    glNormal3f(normals[4].x, normals[4].y, normals[4].z);
     glVertex3f(-0.5f, 0.5f, 0.5f);
     glVertex3f(-0.5f, 0.5f, -0.5f);
     glVertex3f(-0.5f, -0.5f, -0.5f);
     glVertex3f(-0.5f, -0.5f, 0.5f);
 
     // Right face (x = 0.5f)
+    glNormal3f(normals[5].x, normals[5].y, normals[5].z);
     glVertex3f(0.5f, 0.5f, -0.5f);
     glVertex3f(0.5f, 0.5f, 0.5f);
     glVertex3f(0.5f, -0.5f, 0.5f);
@@ -796,6 +804,8 @@ void drawTexturedFace(int type, GLTexture _tex, int rep) {
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, _tex.texture[0]);	// Bind the ground texture
     glBegin(GL_QUADS);
+    glNormal3f(normals[type].x, normals[type].y, normals[type].z);
+
     switch (type)
     {
     case 0:
@@ -867,9 +877,8 @@ void drawTexturedFace(int type, GLTexture _tex, int rep) {
 //if point is inside a rectangle characterized by bottom-left/top-right points
 bool insideRectangle(Vector bottomLeft, Vector topRight, Vector p)
 {
-    float margin = 0.02;
-    if (p.x > bottomLeft.x + margin && p.x < topRight.x - margin
-        && p.z > topRight.z + margin && p.z < bottomLeft.z - margin
+    if (p.x > bottomLeft.x && p.x < topRight.x
+        && p.z > topRight.z && p.z < bottomLeft.z
         && p.y >= halfThickness && p.y < 2) {
         return true;
     }
@@ -1002,12 +1011,12 @@ void RenderTree(double x = 0.0, double z = 0.0) {
 }
 
 void RenderSanta(double x = 0.0, double z = 0.0) {
-    glDisable(GL_LIGHTING);
+    //glDisable(GL_LIGHTING);
     glPushMatrix();
     glScaled(0.0075, 0.0075, 0.0075);
     santa.Draw();
     glPopMatrix();
-    glEnable(GL_LIGHTING);
+    //glEnable(GL_LIGHTING);
 }
 
 void RenderPresent(double x = 0.0, double z = 0.0) {
@@ -1021,12 +1030,12 @@ void RenderPresent(double x = 0.0, double z = 0.0) {
 }
 
 void RenderPlayer2(double x = 0.0, double z = 0.0) {
-    glDisable(GL_LIGHTING);
+    //glDisable(GL_LIGHTING);
     glPushMatrix();
     glScaled(0.02, 0.02, 0.02);
     player2.Draw();
     glPopMatrix();
-    glEnable(GL_LIGHTING);
+    //glEnable(GL_LIGHTING);
 }
 
 void RenderSkeleton(double x = 0.0, double z = 0.0) {
@@ -1389,10 +1398,11 @@ void Display(void) {
         bottomRoom.render();
         leftRoom.render();
 
+        drawSpikes();
+
         glDisable(GL_LIGHTING);	// Disable lighting
         glPushMatrix();
 
-        drawSpikes();
         if (level == LEVEL_2) {
             drawMovingWalls();
         }
@@ -1698,7 +1708,28 @@ void key(unsigned char k, int x, int y)
 //===============================LIGHT=================================
 
 void setupLights() {
-    // TODO
+    glDisable(GL_LIGHTING);
+
+    //float light_diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    if (level == LEVEL_1) {
+        GLfloat l0Ambient[] = { 1.0f, 1.0f, 0.1f, 1.0f };
+        glLightfv(GL_LIGHT0, GL_AMBIENT, l0Ambient);
+        //glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+    }
+    else {
+        GLfloat l0Ambient[] = { 1.0f, 1.0f, 0.9f, 1.0f };
+        glLightfv(GL_LIGHT0, GL_AMBIENT, l0Ambient);
+        //glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+    }
+    GLfloat l0Position[] = { -30 * sin(DEGTORAD(lightRotation)), 30 * cos(DEGTORAD(lightRotation)), 0.0f, 1 };
+    // cout << l0Position[0] << endl;
+    // cout << l0Position[1] << endl;
+
+    glLightfv(GL_LIGHT0, GL_POSITION, l0Position);
+
+    glEnable(GL_LIGHT0);
+
+    glEnable(GL_LIGHTING);
 }
 
 //===============================MUSIC=================================
