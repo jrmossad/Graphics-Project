@@ -63,6 +63,7 @@ void drawMovingWalls();
 void drawLevelDoor();
 void drawSun();
 void drawMoon();
+void setupLights();
 
 //===============================CLASSES=================================
 class Vector
@@ -289,7 +290,6 @@ public:
             glPopMatrix();
         }
     }
-
 
     void drawBackWall(int type) {
 
@@ -683,6 +683,11 @@ Vector movingWalls[] = {
     Vector(-3.9, 0.0, 0.0)
 };
 
+// Light Source Rotation
+double lightRotation = 0;
+bool incrementLightRotation = false;
+
+// Moving Walls Translation
 double wallsTranslation = 0.0;
 bool areWallsMovingUp = false;
 
@@ -1284,7 +1289,7 @@ void drawGameText() {
 
     //draw time bonus
     char* p1s[20];
-    sprintf((char*)p1s, "Time bonus: %d", timeBonus);
+    sprintf((char*)p1s, "Time Bonus: %d", timeBonus);
     print(10, screenH - 60, (char*)p1s);
 
     //draw player pos
@@ -1329,6 +1334,8 @@ void Display(void) {
         glColor3f(1, 1, 1);
         drawPlayer(playerPos.x, playerPos.y, playerPos.z);
     }
+
+    setupLights();
 
     glColor3f(1, 1, 1);
 
@@ -1483,6 +1490,9 @@ void SpecialInput(int key, int x, int y)
                 eye = playerPos;
 
                 timeBonus = 201;
+
+                lightRotation = 0.0;
+                incrementLightRotation = false;
    
                 wallsTranslation = 0.0;
                 areWallsMovingUp = false;
@@ -1543,15 +1553,17 @@ void dropPickedUpBall() {
 void drawSun() {
     glColor3f(0.9, 0.7, 0.15);
     glPushMatrix();
-    glTranslated(0, 20, 0);
-    glutSolidSphere(3, 30, 60);
+    glRotated(lightRotation, 0, 0, 1);
+    glTranslated(0, 30, 0);
+    glutSolidSphere(4, 30, 60);
     glPopMatrix();
 }
 
 void drawMoon() {
     glColor3f(0.9, 0.9, 0.9);
     glPushMatrix();
-    glTranslated(0, 20, 0);
+    glRotated(lightRotation, 0, 0, 1);
+    glTranslated(0, 30, 0);
     glutSolidSphere(2, 30, 60);
     glPopMatrix();
 }
@@ -1654,6 +1666,12 @@ void key(unsigned char k, int x, int y)
     glutPostRedisplay();
 }
 
+//===============================LIGHT=================================
+
+void setupLights() {
+    // TODO
+}
+
 //===============================MUSIC=================================
 
 void playMusic(int musicConstant) {
@@ -1707,6 +1725,15 @@ void playSound(int soundConstant) {
 
 void Idle()
 {
+    if (incrementLightRotation) {
+        lightRotation += 0.05;
+        if (lightRotation >= 60) incrementLightRotation = false;
+    }
+    else {
+        lightRotation -= 0.05;
+        if (lightRotation <= -60) incrementLightRotation = true;
+    }
+
     if (areWallsMovingUp) {
         wallsTranslation += 0.01;
         if (wallsTranslation >= 0.0) areWallsMovingUp = false;
@@ -1716,7 +1743,6 @@ void Idle()
         if (wallsTranslation <= -1.2) areWallsMovingUp = true;
     }
     glutPostRedisplay();
-
 }
 
 //===============================ASSETS=================================
