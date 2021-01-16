@@ -56,6 +56,7 @@ bool hasSteppedOnSpike();
 bool hasCollidedWithMovingWall(Vector after);
 bool isLevelDoorClosed();
 void drawGameText();
+void drawGameOver();
 void RenderSanta(double x, double z);
 void RenderPlayer2(double x, double z);
 void drawSpikes();
@@ -708,7 +709,7 @@ Color pickedBall = NONE;
 
 //score
 int score = 0;
-int timeBonus = 201;
+int timeBonus = 180;
 
 //predefined door sizes
 float eighth[4] = { 0.125, 0.125, 0.125, 0.125 };
@@ -923,9 +924,16 @@ void print(float x, float y, char* string)
 
 void second(int val)
 {
-    timeBonus = max(timeBonus - 1, 0);
-    glutPostRedisplay();						// redraw
-    glutTimerFunc(1000, second, 0);					//recall the time function after 1000 ms and pass a zero value as an input to the time func.
+    timeBonus--;
+    if (timeBonus == 0) {
+        hasGameEnded = true;
+        playSound(8);
+    }
+    else {
+        glutTimerFunc(1000, second, 0);
+    }
+
+    glutPostRedisplay();
 }
 
 
@@ -961,7 +969,7 @@ void init() {
     leftRoom.assignWall(3, 0);
 
     //start score timer
-    second(0);
+    glutTimerFunc(1000, second, 0);
 
     // Play background music.
     if (level == LEVEL_1) {
@@ -1298,6 +1306,16 @@ void drawGameText() {
     print(10, screenH - 90, (char*)p2s);
 }
 
+void drawGameOver() {
+    glColor3f(1.0, 1.0, 1.0);
+
+    print(screenW / 2 - 60, screenH / 2 + 30, "Game Over!");
+
+    char* p0s[20];
+    sprintf((char*)p0s, "Score: %d", score);
+    print(screenW / 2 - 60, screenH / 2 - 30, (char*)p0s);
+}
+
 //===============================DISPLAY=================================
 
 void Display(void) {
@@ -1305,106 +1323,111 @@ void Display(void) {
 
     glLoadIdentity();
 
-    //camera initialization
-    if (firstPerson) {
-        glRotated(cameraRotation.y, 1, 0, 0);
-        glRotated(cameraRotation.x, 0, 1, 0);
-
-        gluLookAt(eye.x,
-            eye.y,
-            eye.z,
-            eye.x + 1,
-            eye.y,
-            eye.z,
-            up.x,
-            up.y,
-            up.z);
+    if (hasGameEnded) {
+        drawGameOver();
     }
     else {
-        gluLookAt(eye.x - cos(DEGTORAD(cameraRotation.x)) * camDistance,
-            eye.y - sin(DEGTORAD(cameraRotation.y)) * 0.3,
-            eye.z - sin(DEGTORAD(cameraRotation.x)) * camDistance,
-            playerPos.x,
-            playerPos.y,
-            playerPos.z,
-            up.x,
-            up.y,
-            up.z);
+        //camera initialization
+        if (firstPerson) {
+            glRotated(cameraRotation.y, 1, 0, 0);
+            glRotated(cameraRotation.x, 0, 1, 0);
+
+            gluLookAt(eye.x,
+                eye.y,
+                eye.z,
+                eye.x + 1,
+                eye.y,
+                eye.z,
+                up.x,
+                up.y,
+                up.z);
+        }
+        else {
+            gluLookAt(eye.x - cos(DEGTORAD(cameraRotation.x)) * camDistance,
+                eye.y - sin(DEGTORAD(cameraRotation.y)) * 0.3,
+                eye.z - sin(DEGTORAD(cameraRotation.x)) * camDistance,
+                playerPos.x,
+                playerPos.y,
+                playerPos.z,
+                up.x,
+                up.y,
+                up.z);
+
+            glColor3f(1, 1, 1);
+            drawPlayer(playerPos.x, playerPos.y, playerPos.z);
+        }
+
+        setupLights();
 
         glColor3f(1, 1, 1);
-        drawPlayer(playerPos.x, playerPos.y, playerPos.z);
+
+        if (level == LEVEL_1) {
+            RenderPresent(0.2, -0.2);
+            RenderPresent(-0.2, -0.2);
+            RenderPresent(-0.2, 0.2);
+
+            RenderTree();
+        }
+        else {
+            RenderSkull(0.5, 0.5);
+
+            RenderPumpkin(0.2, -0.2);
+            RenderPumpkin(-0.2, -0.2);
+            RenderPumpkin(-0.2, 0.2);
+
+            RenderSkeleton(-0.5, 0.5);
+        }
+
+        RenderGround();
+
+        mainRoom.render();
+
+        rightHallWay.render();
+        leftHallWay.render();
+        rightRoom.render();
+        rightBottomHallway.render();
+        bottomRoom.render();
+        leftRoom.render();
+
+        glDisable(GL_LIGHTING);	// Disable lighting
+        glPushMatrix();
+
+        drawSpikes();
+        if (level == LEVEL_2) {
+            drawMovingWalls();
+        }
+
+        drawBalls();
+        drawSlots();
+
+        if (isLevelDoorClosed()) {
+            drawLevelDoor();
+        }
+
+        // Sky color
+        if (level == LEVEL_1) {
+            drawSun();
+            glColor3f(0.118, 0.565, 1);
+        }
+        else {
+            drawMoon();
+            glColor3f(0.2, 0.2, 0.2);
+        }
+
+        GLUquadricObj* qobj;
+        qobj = gluNewQuadric();
+        glTranslated(50, 0, 0);
+        glRotated(90, 1, 0, 1);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        gluQuadricTexture(qobj, true);
+        gluQuadricNormals(qobj, GL_SMOOTH);
+        gluSphere(qobj, 100, 100, 100);
+        gluDeleteQuadric(qobj);
+        glPopMatrix();
+        glEnable(GL_LIGHTING);	// Enable lighting again for other entites coming throung the pipeline.
+
+        drawGameText();
     }
-
-    setupLights();
-
-    glColor3f(1, 1, 1);
-
-    if (level == LEVEL_1) {
-        RenderPresent(0.2,-0.2);
-        RenderPresent(-0.2, -0.2);
-        RenderPresent(-0.2, 0.2);
-
-        RenderTree();
-    }
-    else {
-        RenderSkull(0.5, 0.5);
-
-        RenderPumpkin(0.2, -0.2);
-        RenderPumpkin(-0.2, -0.2);
-        RenderPumpkin(-0.2, 0.2);
-
-        RenderSkeleton(-0.5, 0.5);
-    }
-
-    RenderGround();
-
-    mainRoom.render();
-
-    rightHallWay.render();
-    leftHallWay.render();
-    rightRoom.render();
-    rightBottomHallway.render();
-    bottomRoom.render();
-    leftRoom.render();
-
-    glDisable(GL_LIGHTING);	// Disable lighting
-    glPushMatrix();
-
-    drawSpikes();
-    if (level == LEVEL_2) {
-        drawMovingWalls();
-    }
-
-    drawBalls();
-    drawSlots();
-
-    if (isLevelDoorClosed()) {
-        drawLevelDoor();
-    }
-
-    // Sky color
-    if (level == LEVEL_1) {
-        drawSun();
-        glColor3f(0.118, 0.565, 1);
-    }
-    else {
-        drawMoon();
-        glColor3f(0.2, 0.2, 0.2);
-    }
-
-    GLUquadricObj* qobj;
-    qobj = gluNewQuadric();
-    glTranslated(50, 0, 0);
-    glRotated(90, 1, 0, 1);
-    glBindTexture(GL_TEXTURE_2D, tex);
-    gluQuadricTexture(qobj, true);
-    gluQuadricNormals(qobj, GL_SMOOTH);
-    gluSphere(qobj, 100, 100, 100);
-    gluDeleteQuadric(qobj);
-    glPopMatrix();
-    glEnable(GL_LIGHTING);	// Enable lighting again for other entites coming throung the pipeline.
-
-    drawGameText();
 
     glFlush();
 }
@@ -1446,87 +1469,89 @@ void mouseMovement(int x, int y)
 
 void SpecialInput(int key, int x, int y)
 {
-    Vector after(playerPos.x, playerPos.y, playerPos.z);
-    Vector Movement(0.0, 0.0, 0.0);
-    switch (key)
-    {
-    case GLUT_KEY_UP:
-        Movement.x += cos(DEGTORAD(cameraRotation.x)) * speed;
-        Movement.z += sin(DEGTORAD(cameraRotation.x)) * speed;
-        break;
-    case GLUT_KEY_DOWN:
-        Movement.x -= cos(DEGTORAD(cameraRotation.x)) * speed;
-        Movement.z -= sin(DEGTORAD(cameraRotation.x)) * speed;
-        break;
-    case GLUT_KEY_LEFT:
-        Movement.x += sin(DEGTORAD(cameraRotation.x)) * speed;
-        Movement.z -= cos(DEGTORAD(cameraRotation.x)) * speed;
-        break;
-    case GLUT_KEY_RIGHT:
-        Movement.x -= sin(DEGTORAD(cameraRotation.x)) * speed;
-        Movement.z += cos(DEGTORAD(cameraRotation.x)) * speed;
-        break;
-    }
-
-    after += Movement;
-    int n = sizeof(mapRectangles) / sizeof(mapRectangles[0]);
-    if (!hasCollidedWithMovingWall(after) && validMove(mapRectangles, n, after)) {
-        playerPos = after;
-        eye += Movement;
-
-        if (hasSteppedOnSpike()) {
-            score = max(0, score - 2);
-            playSound(2);
-        }
-        else {
-            playSound(0);
+    if (!hasGameEnded) {
+        Vector after(playerPos.x, playerPos.y, playerPos.z);
+        Vector Movement(0.0, 0.0, 0.0);
+        switch (key)
+        {
+        case GLUT_KEY_UP:
+            Movement.x += cos(DEGTORAD(cameraRotation.x)) * speed;
+            Movement.z += sin(DEGTORAD(cameraRotation.x)) * speed;
+            break;
+        case GLUT_KEY_DOWN:
+            Movement.x -= cos(DEGTORAD(cameraRotation.x)) * speed;
+            Movement.z -= sin(DEGTORAD(cameraRotation.x)) * speed;
+            break;
+        case GLUT_KEY_LEFT:
+            Movement.x += sin(DEGTORAD(cameraRotation.x)) * speed;
+            Movement.z -= cos(DEGTORAD(cameraRotation.x)) * speed;
+            break;
+        case GLUT_KEY_RIGHT:
+            Movement.x -= sin(DEGTORAD(cameraRotation.x)) * speed;
+            Movement.z += cos(DEGTORAD(cameraRotation.x)) * speed;
+            break;
         }
 
-        if (!isLevelDoorClosed() && levelDoor.z >= playerPos.z && levelDoor.x - 0.2 <= playerPos.x && playerPos.x <= levelDoor.x + 0.2) {
-            if (level == LEVEL_1) {
-                level = LEVEL_2;
-   
-                playerPos = Vector(0.0, 0.5, 0.0);
-                eye = playerPos;
+        after += Movement;
+        int n = sizeof(mapRectangles) / sizeof(mapRectangles[0]);
+        if (!hasCollidedWithMovingWall(after) && validMove(mapRectangles, n, after)) {
+            playerPos = after;
+            eye += Movement;
 
-                timeBonus = 201;
-
-                lightRotation = 0.0;
-                incrementLightRotation = false;
-   
-                wallsTranslation = 0.0;
-                areWallsMovingUp = false;
-   
-                redBall.pos = Vector(5.5, 0, 0);
-                greenBall.pos = Vector(-5.5, 0, 0);
-                blueBall.pos = Vector(4.9, 0, 8.5);
-
-                redBall.isPickedUp = false;
-                greenBall.isPickedUp = false;
-                blueBall.isPickedUp = false;
-   
-                redSlot.isBallPlaced = false;
-                greenSlot.isBallPlaced = false;
-                blueSlot.isBallPlaced = false;
-
-                pickedBall = NONE;
-   
-                playSound(6);
-                playMusic(1);
+            if (hasSteppedOnSpike()) {
+                score = max(0, score - 2);
+                playSound(2);
             }
             else {
-                hasGameEnded = true;
-                playSound(7);
+                playSound(0);
+            }
+
+            if (!isLevelDoorClosed() && levelDoor.z >= playerPos.z && levelDoor.x - 0.2 <= playerPos.x && playerPos.x <= levelDoor.x + 0.2) {
+                if (level == LEVEL_1) {
+                    level = LEVEL_2;
+
+                    playerPos = Vector(0.0, 0.5, 0.0);
+                    eye = playerPos;
+
+                    timeBonus = 180;
+
+                    lightRotation = 0.0;
+                    incrementLightRotation = false;
+
+                    wallsTranslation = 0.0;
+                    areWallsMovingUp = false;
+
+                    redBall.pos = Vector(5.5, 0, 0);
+                    greenBall.pos = Vector(-5.5, 0, 0);
+                    blueBall.pos = Vector(4.9, 0, 8.5);
+
+                    redBall.isPickedUp = false;
+                    greenBall.isPickedUp = false;
+                    blueBall.isPickedUp = false;
+
+                    redSlot.isBallPlaced = false;
+                    greenSlot.isBallPlaced = false;
+                    blueSlot.isBallPlaced = false;
+
+                    pickedBall = NONE;
+
+                    playSound(6);
+                    playMusic(1);
+                }
+                else {
+                    hasGameEnded = true;
+                    playSound(7);
+                }
             }
         }
-    }
-    else {
-        //collision logic
-        score = max(0, score - 2);
-        playSound(1);
-    }
+        else {
+            //collision logic
+            score = max(0, score - 2);
+            playSound(1);
+        }
 
-    glutPostRedisplay();
+        glutPostRedisplay();
+    }
 }
 
 void dropPickedUpBall() {
@@ -1573,97 +1598,101 @@ void key(unsigned char k, int x, int y)
     if (k == GLUT_KEY_ESCAPE)
         exit(EXIT_SUCCESS);
 
-    //distance between camera, player
-    if (!firstPerson) {
-        if (k == 'z' || k == 'Z') {
-            camDistance = max(0.3, camDistance - 0.1);
-        }
-
-        if (k == 'x' || k == 'X') {
-            camDistance = min(0.8, camDistance + 0.1);
-        }
-    }
-
-    //toggle first person
-    if (k == 'c' || k == 'C') {
+    if (!hasGameEnded) {
+        //distance between camera, player
         if (!firstPerson) {
-            eye = playerPos;
-            cameraRotation.y = 0;
+            if (k == 'z' || k == 'Z') {
+                camDistance = max(0.3, camDistance - 0.1);
+            }
+
+            if (k == 'x' || k == 'X') {
+                camDistance = min(0.8, camDistance + 0.1);
+            }
         }
 
-        firstPerson = !firstPerson;
-    }
+        //toggle first person
+        if (k == 'c' || k == 'C') {
+            if (!firstPerson) {
+                eye = playerPos;
+                cameraRotation.y = 0;
+            }
 
-    // Pick up a ball.
-    if (k == 'p' || k == 'P') {
-        if (redBall.pos.x - 0.4 <= playerPos.x && playerPos.x <= redBall.pos.x + 0.4
-            && redBall.pos.z - 0.4 <= playerPos.z && playerPos.z <= redBall.pos.z + 0.4
-            && !redSlot.isBallPlaced) {
-            dropPickedUpBall();
-            redBall.isPickedUp = true;
-            pickedBall = RED;
-            playSound(3);
-        } else if (greenBall.pos.x - 0.4 <= playerPos.x && playerPos.x <= greenBall.pos.x + 0.4
-            && greenBall.pos.z - 0.4 <= playerPos.z && playerPos.z <= greenBall.pos.z + 0.4
-            && !greenSlot.isBallPlaced) {
-            dropPickedUpBall();
-            greenBall.isPickedUp = true;
-            pickedBall = GREEN;
-            playSound(3);
-        } else if (blueBall.pos.x - 0.4 <= playerPos.x && playerPos.x <= blueBall.pos.x + 0.4
-            && blueBall.pos.z - 0.4 <= playerPos.z && playerPos.z <= blueBall.pos.z + 0.4
-            && !blueSlot.isBallPlaced) {
-            dropPickedUpBall();
-            blueBall.isPickedUp = true;
-            pickedBall = BLUE;
-            playSound(3);
+            firstPerson = !firstPerson;
         }
-    }
 
-    // Drop the picked ball.
-    if (k == 'd' || k == 'D') {
-        switch (pickedBall) {
-        case RED:
-            if (redSlot.pos.x - 0.4 <= playerPos.x && playerPos.x <= redSlot.pos.x + 0.4
-                && redSlot.pos.z - 0.4 <= playerPos.z && playerPos.z <= redSlot.pos.z + 0.4) {
-                redSlot.isBallPlaced = true;
-                score += timeBonus;
-                if (!isLevelDoorClosed()) playSound(5);
+        // Pick up a ball.
+        if (k == 'p' || k == 'P') {
+            if (redBall.pos.x - 0.4 <= playerPos.x && playerPos.x <= redBall.pos.x + 0.4
+                && redBall.pos.z - 0.4 <= playerPos.z && playerPos.z <= redBall.pos.z + 0.4
+                && !redSlot.isBallPlaced) {
+                dropPickedUpBall();
+                redBall.isPickedUp = true;
+                pickedBall = RED;
+                playSound(3);
             }
-            redBall.pos.x = playerPos.x;
-            redBall.pos.z = playerPos.z;
-            redBall.isPickedUp = false;
-            if (isLevelDoorClosed()) playSound(4);
-            break;
-        case GREEN:
-            if (greenSlot.pos.x - 0.4 <= playerPos.x && playerPos.x <= greenSlot.pos.x + 0.4
-                && greenSlot.pos.z - 0.4 <= playerPos.z && playerPos.z <= greenSlot.pos.z + 0.4) {
-                greenSlot.isBallPlaced = true;
-                score += timeBonus;
-                if (!isLevelDoorClosed()) playSound(5);
+            else if (greenBall.pos.x - 0.4 <= playerPos.x && playerPos.x <= greenBall.pos.x + 0.4
+                && greenBall.pos.z - 0.4 <= playerPos.z && playerPos.z <= greenBall.pos.z + 0.4
+                && !greenSlot.isBallPlaced) {
+                dropPickedUpBall();
+                greenBall.isPickedUp = true;
+                pickedBall = GREEN;
+                playSound(3);
             }
-            greenBall.pos.x = playerPos.x;
-            greenBall.pos.z = playerPos.z;
-            greenBall.isPickedUp = false;
-            if (isLevelDoorClosed()) playSound(4);
-            break;
-        case BLUE:
-            if (blueSlot.pos.x - 0.4 <= playerPos.x && playerPos.x <= blueSlot.pos.x + 0.4
-                && blueSlot.pos.z - 0.4 <= playerPos.z && playerPos.z <= blueSlot.pos.z + 0.4) {
-                blueSlot.isBallPlaced = true;
-                score += timeBonus;
-                if (!isLevelDoorClosed()) playSound(5);
+            else if (blueBall.pos.x - 0.4 <= playerPos.x && playerPos.x <= blueBall.pos.x + 0.4
+                && blueBall.pos.z - 0.4 <= playerPos.z && playerPos.z <= blueBall.pos.z + 0.4
+                && !blueSlot.isBallPlaced) {
+                dropPickedUpBall();
+                blueBall.isPickedUp = true;
+                pickedBall = BLUE;
+                playSound(3);
             }
-            blueBall.pos.x = playerPos.x;
-            blueBall.pos.z = playerPos.z;
-            blueBall.isPickedUp = false;
-            if (isLevelDoorClosed()) playSound(4);
-            break;
         }
-        pickedBall = NONE;
-    }
 
-    glutPostRedisplay();
+        // Drop the picked ball.
+        if (k == 'd' || k == 'D') {
+            switch (pickedBall) {
+            case RED:
+                if (redSlot.pos.x - 0.4 <= playerPos.x && playerPos.x <= redSlot.pos.x + 0.4
+                    && redSlot.pos.z - 0.4 <= playerPos.z && playerPos.z <= redSlot.pos.z + 0.4) {
+                    redSlot.isBallPlaced = true;
+                    score += timeBonus;
+                    if (!isLevelDoorClosed()) playSound(5);
+                }
+                redBall.pos.x = playerPos.x;
+                redBall.pos.z = playerPos.z;
+                redBall.isPickedUp = false;
+                if (isLevelDoorClosed()) playSound(4);
+                break;
+            case GREEN:
+                if (greenSlot.pos.x - 0.4 <= playerPos.x && playerPos.x <= greenSlot.pos.x + 0.4
+                    && greenSlot.pos.z - 0.4 <= playerPos.z && playerPos.z <= greenSlot.pos.z + 0.4) {
+                    greenSlot.isBallPlaced = true;
+                    score += timeBonus;
+                    if (!isLevelDoorClosed()) playSound(5);
+                }
+                greenBall.pos.x = playerPos.x;
+                greenBall.pos.z = playerPos.z;
+                greenBall.isPickedUp = false;
+                if (isLevelDoorClosed()) playSound(4);
+                break;
+            case BLUE:
+                if (blueSlot.pos.x - 0.4 <= playerPos.x && playerPos.x <= blueSlot.pos.x + 0.4
+                    && blueSlot.pos.z - 0.4 <= playerPos.z && playerPos.z <= blueSlot.pos.z + 0.4) {
+                    blueSlot.isBallPlaced = true;
+                    score += timeBonus;
+                    if (!isLevelDoorClosed()) playSound(5);
+                }
+                blueBall.pos.x = playerPos.x;
+                blueBall.pos.z = playerPos.z;
+                blueBall.isPickedUp = false;
+                if (isLevelDoorClosed()) playSound(4);
+                break;
+            }
+            pickedBall = NONE;
+        }
+
+        glutPostRedisplay();
+    }
 }
 
 //===============================LIGHT=================================
